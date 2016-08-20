@@ -25,11 +25,13 @@ class NbodyWidget(QtOpenGL.QGLWidget):
         self.playbackIndex = playbackIndex #where we are in the playback
         
         #set a 1:1 aspect ratio for the widget. See heightForWidth() function
-# Note, worked on ubuntu, doesn't work on windows 10        
-#         sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Preferred, QtGui.QSizePolicy.Preferred)
-#         sizePolicy.setHeightForWidth(True)
-#         self.setSizePolicy(sizePolicy)        
-        self.setFixedSize(QtCore.QSize(930,930))
+        # Note, worked on ubuntu, doesn't work on windows 10        
+        sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Preferred, QtGui.QSizePolicy.Preferred)
+        sizePolicy.setHeightForWidth(True)
+        self.setSizePolicy(sizePolicy)
+        
+        
+        self.resize(QtCore.QSize(600,600))
         self.cameraAzimuth = 0
         self.cameraElevation = 90
         self.cameraTranslation = [0,0]
@@ -60,9 +62,10 @@ class NbodyWidget(QtOpenGL.QGLWidget):
         
     #used in QSizePolicy to determine the preferred aspect ratio for the widget. 
     #I want to keep it square, so I just return width
-# Note: worked on ubuntu, doesn't work on windows 10        
-#     def heightForWidth(self,width):
-#         return width        
+    # Note: works fine on ubuntu, but apparently not on windows.
+    #Also, resizing the glwidget in windows sometimes crashes the whole app. No idea why. Will pay weight in gold for an answer     
+    def heightForWidth(self,width):
+        return width        
     
     #resize viewport whenever the widget is resized. Prevents unwanted clipping
     def resizeGL(self,width,height):    
@@ -189,18 +192,21 @@ class NbodyWidget(QtOpenGL.QGLWidget):
         GL.glMatrixMode(GL.GL_MODELVIEW)
 
     def paintGL(self):
-        GL.glClear(GL.GL_COLOR_BUFFER_BIT | GL.GL_DEPTH_BUFFER_BIT)
-        GL.glLoadIdentity()
+        try:
+            GL.glClear(GL.GL_COLOR_BUFFER_BIT | GL.GL_DEPTH_BUFFER_BIT)
+            GL.glLoadIdentity()
+            
+            # note: it's glRotate + d for double, not past tense
+            #camera defaults to pointing in the -z direction (into the screen).
+            #since the ecliptic is set up on the xy plane, the camera defaults to looking down on the ecliptic (90 deg elevation)
+            #so if elevation is 90, we want want 0 camera rotation, and so on...
+            GL.glRotated(self.cameraElevation-90, 1.0, 0.0, 0.0);
+            GL.glRotated(self.cameraAzimuth, 0.0, 0.0, 1.0);
         
-        # note: it's glRotate + d for double, not past tense
-        #camera defaults to pointing in the -z direction (into the screen).
-        #since the ecliptic is set up on the xy plane, the camera defaults to looking down on the ecliptic (90 deg elevation)
-        #so if elevation is 90, we want want 0 camera rotation, and so on...
-        GL.glRotated(self.cameraElevation-90, 1.0, 0.0, 0.0);
-        GL.glRotated(self.cameraAzimuth, 0.0, 0.0, 1.0);
-    
-        GL.glCallList(self.objectPoints)
-        GL.glCallList(self.objectPaths)
+            GL.glCallList(self.objectPoints)
+            GL.glCallList(self.objectPaths)
+        except Exception:
+            print("paintGL")
 
 
     def mousePressEvent(self, event):

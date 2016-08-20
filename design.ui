@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1221</width>
-    <height>774</height>
+    <width>1184</width>
+    <height>816</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -53,8 +53,8 @@
           <rect>
            <x>0</x>
            <y>0</y>
-           <width>591</width>
-           <height>51</height>
+           <width>521</width>
+           <height>41</height>
           </rect>
          </property>
          <layout class="QHBoxLayout" name="horizontalLayout_4">
@@ -167,7 +167,7 @@
        <property name="geometry">
         <rect>
          <x>10</x>
-         <y>370</y>
+         <y>300</y>
          <width>501</width>
          <height>281</height>
         </rect>
@@ -531,7 +531,7 @@
        <property name="geometry">
         <rect>
          <x>10</x>
-         <y>660</y>
+         <y>590</y>
          <width>187</width>
          <height>51</height>
         </rect>
@@ -557,9 +557,9 @@
        <property name="geometry">
         <rect>
          <x>10</x>
-         <y>310</y>
+         <y>260</y>
          <width>241</width>
-         <height>51</height>
+         <height>31</height>
         </rect>
        </property>
        <layout class="QFormLayout" name="formLayout">
@@ -605,7 +605,7 @@
        <property name="geometry">
         <rect>
          <x>10</x>
-         <y>70</y>
+         <y>60</y>
          <width>501</width>
          <height>191</height>
         </rect>
@@ -1023,6 +1023,8 @@
       <zorder>formLayoutWidget</zorder>
       <zorder>horizontalLayoutWidget_3</zorder>
       <zorder>computeMode</zorder>
+      <zorder>timerGroupbox</zorder>
+      <zorder>horizontalLayoutWidget_2</zorder>
      </widget>
     </item>
    </layout>

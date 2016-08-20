@@ -32,10 +32,11 @@ class Main(MainWindow, MainWindowUi):
         self.objectsSetEnabled(self.glWidget.isPaused)        
         
         #fixed size because rapidly resizing causes an unexplained crash on windows 10. was not a problem in my ubuntu environment
-        self.setFixedSize(1500,1000)      
+        
+        self.resize(1140,671)      
         self.show()
         
-#        self.showFullScreen()     
+        self.showFullScreen()     
 
     def initButtons(self, xml):
         #add opengl widget to layout
