@@ -192,22 +192,18 @@ class NbodyWidget(QtOpenGL.QGLWidget):
         GL.glMatrixMode(GL.GL_MODELVIEW)
 
     def paintGL(self):
-        try:
-            GL.glClear(GL.GL_COLOR_BUFFER_BIT | GL.GL_DEPTH_BUFFER_BIT)
-            GL.glLoadIdentity()
-            
-            # note: it's glRotate + d for double, not past tense
-            #camera defaults to pointing in the -z direction (into the screen).
-            #since the ecliptic is set up on the xy plane, the camera defaults to looking down on the ecliptic (90 deg elevation)
-            #so if elevation is 90, we want want 0 camera rotation, and so on...
-            GL.glRotated(self.cameraElevation-90, 1.0, 0.0, 0.0);
-            GL.glRotated(self.cameraAzimuth, 0.0, 0.0, 1.0);
+        GL.glClear(GL.GL_COLOR_BUFFER_BIT | GL.GL_DEPTH_BUFFER_BIT)
+        GL.glLoadIdentity()
         
-            GL.glCallList(self.objectPoints)
-            GL.glCallList(self.objectPaths)
-        except Exception:
-            print("paintGL")
-
+        # note: it's glRotate + d for double, not past tense
+        #camera defaults to pointing in the -z direction (into the screen).
+        #since the ecliptic is set up on the xy plane, the camera defaults to looking down on the ecliptic (90 deg elevation)
+        #so if elevation is 90, we want want 0 camera rotation, and so on...
+        GL.glRotated(self.cameraElevation-90, 1.0, 0.0, 0.0);
+        GL.glRotated(self.cameraAzimuth, 0.0, 0.0, 1.0);
+    
+        GL.glCallList(self.objectPoints)
+        GL.glCallList(self.objectPaths)
 
     def mousePressEvent(self, event):
         self.lastPos = event.pos() 
