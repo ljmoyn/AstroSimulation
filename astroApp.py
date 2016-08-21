@@ -37,7 +37,7 @@ class Main(MainWindow, MainWindowUi):
     def initButtons(self, xml):
         #add opengl widget to layout
         objects,settings,time = self.fromXml(xml, True)
-        initialSimulation = OrbitalSimulation(objects,settings,time)
+        initialSimulation = OrbitalSimulation("Velocity Verlet", objects,settings,time)
         
         self.glWidget = NbodyWidget(initialSimulation,
                                     True, #isPaused,
@@ -88,6 +88,14 @@ class Main(MainWindow, MainWindowUi):
         self.prevPage.clicked.connect(self.changePageFactory(-1))
         
         self.updateViewFocus()
+        
+        self.algorithmDropdown.addItems(list(self.glWidget.simulation.algorithms.keys()))
+        self.algorithmDropdown.currentIndexChanged.connect(self.algorithmDropdown_callback)
+        index = self.algorithmDropdown.findText(self.glWidget.simulation.algorithmKey)
+        self.algorithmDropdown.setCurrentIndex(index)
+
+        for i in range(len(self.glWidget.simulation.objects)):
+            self.viewFocus.addItem(self.glWidget.simulation.objects[i].name)
         
         self.viewFocus.currentIndexChanged.connect(self.viewFocus_callback)
         
@@ -255,6 +263,14 @@ class Main(MainWindow, MainWindowUi):
         self.glWidget.simulation = self.glWidget.precomputedData[newIndex]
 
         self.glWidget.refreshPointsAndPaths()
+        
+    def algorithmDropdown_callback(self, index):
+        self.glWidget.simulation.algorithmKey = self.algorithmDropdown.currentText()
+        if not self.glWidget.isRealtime:
+            self.glWidget.precomputedData = []
+            self.glWidget.playbackIndex = 0
+            self.glWidget.refreshPointsAndPaths()
+            self.refreshPrecomputeControls()
 
     ###########################################################################################
     ### Factories                                                                           ###

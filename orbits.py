@@ -12,10 +12,15 @@ from _overlapped import NULL
 G = 9.94519*10**14 * 6.67408 * 10**-11 / (10**9)**3
 
 class OrbitalSimulation:
-    def __init__(self,objects,objectSettings,time):
+    def __init__(self,algorithm,objects,objectSettings,time):
         self.objects = objects
         self.objectSettings = objectSettings
         
+        self.algorithms = {"Velocity Verlet" : self.velocityVerlet,
+                           "Runge Kutta 4" : self.rungeKutta4,
+                           "scipy.integrate.odeint" : integrate.odeint}        
+        
+        self.algorithmKey = algorithm
         #1d vector containing position/velocity data, is used to store the output from integrate.odeint
         #[x1,y1,z1,Vx1,Vy1,Vz1,x2,y2,z2...]
         #technically redundant, since the data is the same as in self.objects, but kept around for efficiency
@@ -116,14 +121,15 @@ class OrbitalSimulation:
         return (x,y,z)           
             
     def step(self,dt):
-        if dt != 0:        
-            #self.velocityVerlet(dt)
-            self.rungeKutta4(dt)
+        if dt != 0 and self.algorithmKey != "scipy.integrate.odeint":
+            self.algorithms[self.algorithmKey](dt)
+        elif dt != 0:
             #consider getting rid of self.state, making it local to this function.
-            #downside is I'd have to call GetFlattenedObjects for the odeint parameter
-            #self.state = integrate.odeint(self.orbit,self.state,[0, dt])[1]
-            #self.objects = self.GetFlattenedObjects(forward = False)
-            self.time += dt
+            #downside is I'd have to call GetFlattenedObjects for every step
+            self.state = self.algorithms[self.algorithmKey](self.orbit,self.state,[0, dt])[1]
+            self.objects = self.GetFlattenedObjects(forward = False)
+        
+        self.time += dt
     
     #returns 2d vector containing the accelerations of all the objects
     def getGravAccelerations(self, objects = None):
