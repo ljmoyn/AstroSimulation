@@ -1,0 +1,19 @@
+﻿  VisualUtil.cpp
+  main.cpp
+c:\astroworkspace\astrosimulation\astrosimulation\visual.h(102): warning C4018: '<': signed/unsigned mismatch
+c:\astroworkspace\astrosimulation\astrosimulation\visual.h(178): warning C4244: '-=': conversion from 'double' to 'float', possible loss of data
+c:\astroworkspace\astrosimulation\astrosimulation\visual.h(179): warning C4244: '-=': conversion from 'double' to 'float', possible loss of data
+c:\astroworkspace\astrosimulation\astrosimulation\visual.h(181): warning C4244: '-=': conversion from 'double' to 'float', possible loss of data
+c:\astroworkspace\astrosimulation\astrosimulation\visual.h(182): warning C4244: '-=': conversion from 'double' to 'float', possible loss of data
+c:\astroworkspace\astrosimulation\astrosimulation\visual.h(211): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
+c:\astroworkspace\astrosimulation\astrosimulation\visual.h(214): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
+c:\astroworkspace\astrosimulation\astrosimulation\visual.h(217): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
+c:\astroworkspace\astrosimulation\astrosimulation\visual.h(220): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
+c:\astroworkspace\astrosimulation\astrosimulation\visual.h(253): warning C4244: 'initializing': conversion from 'double' to 'GLfloat', possible loss of data
+  Generating Code...
+LINK : warning LNK4098: defaultlib 'MSVCRT' conflicts with use of other libs; use /NODEFAULTLIB:library
+LINK : warning LNK4098: defaultlib 'LIBCMT' conflicts with use of other libs; use /NODEFAULTLIB:library
+glew32s.lib(glew.obj) : warning LNK4099: PDB 'vc120.pdb' was not found with 'glew32s.lib(glew.obj)' or at 'C:\AstroWorkspace\AstroSimulation\Debug\vc120.pdb'; linking object as if no debug info
+pugixml.lib(pugixml.obj) : warning LNK4099: PDB 'pugixml.pdb' was not found with 'pugixml.lib(pugixml.obj)' or at 'C:\AstroWorkspace\AstroSimulation\Debug\pugixml.pdb'; linking object as if no debug info
+  AstroSimulation.vcxproj -> C:\AstroWorkspace\AstroSimulation\Debug\AstroSimulation.exe
+  AstroSimulation.vcxproj -> C:\AstroWorkspace\AstroSimulation\Debug\AstroSimulation.pdb (Partial PDB)
