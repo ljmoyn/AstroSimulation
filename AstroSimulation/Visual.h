@@ -10,14 +10,26 @@
 // Other Libs
 #include <soil/SOIL.h>
 // GLM Mathematics
+#define GLM_SWIZZLE
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/matrix_access.hpp>
+
 #include <glm/gtc/type_ptr.hpp>
+#include <glm/gtx/rotate_vector.hpp>
+
+#include <algorithm>
 
 #include "Shader.h"
 
 #include "Simulation.h"
 #include <vector>
+#include "Camera.h"
+
+//For some reason, everything seems to get clipped on a far plane, despite using infinite perspective
+//probably some GL depth rule that I don't know about
+//set this max depth value to stop zooming out before it gets to that far plane. 
+#define MAX_DEPTH -4.0*pow(10,6) 
 
 class Visual
 {
@@ -25,13 +37,11 @@ public:
 	Visual(char simulationSource[]);
 	~Visual();
 
-	void key_callback(GLFWwindow* window, int key, int scancode, int action, int mode);
 	void mouse_button_callback(GLFWwindow* window, int button, int action, int mods);
 	void cursor_position_callback(GLFWwindow* window, double xpos, double ypos);
-	void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
+	void scroll_callback(GLFWwindow* window, double xpos, double ypos);
 
-	void UpdateModelViewProjection();
-	void do_movement();
+	void setView();
 	void update();
 
 	Simulation simulation;
@@ -50,26 +60,21 @@ private:
 	GLfloat deltaTime = 0.0f;	// Time between current frame and last frame
 	GLfloat lastFrame = 0.0f;  	// Time of last frame
 
-	bool keys[1024];
-	GLfloat elevation = 90.0f;
-	GLfloat azimuth = 0.0f;
-
-	double dx = 0.0;
-	double dy = 0.0;
 	double cursorPrevX;
 	double cursorPrevY;
 	bool leftMousePressed = false;
-
-	glm::vec2 xRange = { -5000.0,5000.0 };
-	glm::vec2 yRange = { -5000.0,5000.0 };
-	glm::vec2 zRange = { -5000.0,5000.0 };
-
-	glm::vec3 zoomTranslate = { 0.0, 0.0, 0.0 };
+	bool rightMousePressed = false;
 
 	glm::mat4 model;
 	glm::mat4 projection;
 	glm::mat4 view;
 
+	GLfloat xTranslate;
+	GLfloat yTranslate;
+	GLfloat zTranslate;
+
+	bool updateView = false;
+	Camera camera;
 };
 
 Visual::Visual(char simulationSource[]) 
@@ -126,6 +131,14 @@ Visual::Visual(char simulationSource[])
 
 	glBindVertexArray(0); // Unbind VAO
 
+	camera = Camera();
+
+	xTranslate = 0.0;
+	yTranslate = 0.0;
+	zTranslate = -1000000.0;
+	setView();
+	model = glm::mat4();
+
 }
 
 Visual::~Visual()
@@ -137,116 +150,6 @@ Visual::~Visual()
 	glfwTerminate();
 }
 
-// Is called whenever a key is pressed/released via GLFW
-void Visual::key_callback(GLFWwindow* window, int key, int scancode, int action, int mode)
-{
-	if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
-		glfwSetWindowShouldClose(window, GL_TRUE);
-	if (key >= 0 && key < 1024)
-	{
-		if (action == GLFW_PRESS)
-			keys[key] = true;
-		else if (action == GLFW_RELEASE)
-			keys[key] = false;
-	}
-}
-
-void Visual::mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
-{
-	if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS) {
-		leftMousePressed = true;
-	}
-
-	if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_RELEASE) {
-		leftMousePressed = false;
-	}
-
-}
-
-void Visual::cursor_position_callback(GLFWwindow* window, double xpos, double ypos) 
-{
-	GLint viewport[4];
-	glGetIntegerv(GL_VIEWPORT, viewport);
-	double scaleX = (xRange[1] - xRange[0]) / viewport[2];
-	double scaleY = (yRange[1] - yRange[0]) / viewport[3];
-
-	if (leftMousePressed) {
-		//positions in pixels * scale = position in world coordinates
-		dx = scaleX * (xpos - cursorPrevX);
-		dy = scaleY * (cursorPrevY - ypos);
-
-		xRange[0] -= dx;
-		xRange[1] -= dx;
-
-		yRange[0] -= dy;
-		yRange[1] -= dy;
-	}
-
-	cursorPrevX = xpos;
-	cursorPrevY = ypos;
-}
-//
-void Visual::scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
-{
-	double zoomFactor = 1.1;
-	if (yoffset > 0)
-		zoomFactor = 1 / 1.1;
-
-	UpdateModelViewProjection();
-	glm::mat4 modelview = view*model;
-	glm::vec4 viewport = { 0.0, 0.0, width, height };
-	
-	double winX = cursorPrevX;//282.0;
-	double winY = width - cursorPrevY;//735.0;
-	//double winZ;
-	//glReadPixels(winX, winY, 1.0, 1.0, GL_DEPTH_COMPONENT, GL_FLOAT, &winZ);
-
-	//GLdouble posX, posY, posZ;
-	glm::vec3 screenCoords = { winX, winY, 0.0 };
-	glm::vec3 position = glm::unProject(screenCoords, modelview, projection, viewport);
-
-	std::cout << position[0] << " " << position[1] << std::endl;
-
-	double leftSegment = (position.x - xRange[0]) * zoomFactor;
-	xRange[0] = position.x - leftSegment;
-
-	double rightSegment = (xRange[1] - position.x) * zoomFactor;
-	xRange[1] = position.x + rightSegment;
-
-	double bottomSegment = (position.y - yRange[0]) * zoomFactor;
-	yRange[0] = position.y - bottomSegment;
-
-	double topSegment = (yRange[1] - position.y) * zoomFactor;
-	yRange[1] = position.y + topSegment;
-}
-
-void Visual::do_movement()
-{
-	// Camera controls
-	GLfloat cameraSpeed = 200.0f * deltaTime;
-	if (keys[GLFW_KEY_W]) {
-		elevation += cameraSpeed;
-		if (elevation > 90.0f)
-			elevation = 90.0f;
-	}
-	if (keys[GLFW_KEY_S]) {
-		elevation -= cameraSpeed;
-		if (elevation < 0.0f)
-			elevation = 0.0f;
-	}
-
-	if (keys[GLFW_KEY_D]) {
-		azimuth += cameraSpeed;
-		if (azimuth > 360.0f)
-			azimuth = 360.0f;
-	}
-	if (keys[GLFW_KEY_A]) {
-		azimuth -= cameraSpeed;
-		if (azimuth < 0.0f)
-			azimuth = 0.0f;
-	}
-}
-
 void Visual::update() 
 {
 	// Calculate deltatime of current frame
@@ -256,8 +159,6 @@ void Visual::update()
 
 	// Check if any events have been activiated (key pressed, mouse moved etc.) and call corresponding response functions
 	glfwPollEvents();
-	do_movement();
-
 
 	// Render
 	// Clear the colorbuffer
@@ -270,16 +171,19 @@ void Visual::update()
 
 	// Activate shader
 	shader.Use();
+	
+	//set view dimensions
+	//projection = glm::ortho(xRange[0], xRange[1], yRange[0], yRange[1], zRange[0], zRange[1]);
+	projection = glm::mat4();
 
-	//model = glm::rotate(model, glm::radians((GLfloat)glfwGetTime() * 50.0f), glm::vec3(0.5f, 1.0f, 0.0f));
+	projection = glm::infinitePerspective(
+		(float)glm::radians(camera.Zoom), // view angle, usually 90° in radians
+		(float)width / height, // aspect ratio
+		0.1f // near clipping plane, should be > 0
+	);
 
-	UpdateModelViewProjection();
-
-	// Camera/View transformation
-	//GLfloat radius = 1000;
-	//GLfloat camX = cos(glfwGetTime()) * radius;
-	//GLfloat camY = sin(glfwGetTime()) * radius;
-	//view = glm::lookAt(glm::vec3(0.0f, camX, camY), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+	if(updateView)
+		setView();
 
 	// Get their uniform location
 	GLint modelLoc = glGetUniformLocation(shader.Program, "model");
@@ -300,40 +204,32 @@ void Visual::update()
 	glfwSwapBuffers(window);
 }
 
-void Visual::UpdateModelViewProjection() {
-	model = glm::mat4();
-	projection = glm::mat4();
-	view = glm::mat4();
+	void Visual::setView() {
+		view = glm::mat4();
 
-	projection = glm::ortho(xRange[0], xRange[1], yRange[0], yRange[1], zRange[0], zRange[1]);
-	//projection = glm::perspective(glm::radians(45.0f), (GLfloat)WIDTH / (GLfloat)HEIGHT, 0.1f, 5000.0f);
+		view = glm::translate(view, { xTranslate,yTranslate,zTranslate });
 
-	//model = glm::translate(model, glm::vec3(dx, dy, 0.0));
+		std::cout << camera.inclination << " " << camera.azimuth << std::endl;
+		view = glm::translate(view, { -xTranslate,-yTranslate,0.0 });
+		view = glm::rotate(view, glm::radians(camera.inclination), glm::vec3(1.f, 0.f, 0.f));
+		view = glm::rotate(view, glm::radians(camera.azimuth), glm::vec3(0.f, 0.f, 1.f));
+		view = glm::translate(view, { xTranslate,yTranslate,0.0 });
 
-	double midX = xRange[0] + (xRange[1] - xRange[0]) / 2;
-	double midY = yRange[0] + (yRange[1] - yRange[0]) / 2;
 
-	//model = glm::translate(model, glm::vec3(-midX, -midY, 0.0));
-	model = glm::rotate(model, glm::radians((GLfloat)elevation - 90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
-	model = glm::rotate(model, glm::radians((GLfloat)azimuth), glm::vec3(0.0f, 0.0f, 1.0f));
-	//model = glm::translate(model, glm::vec3(midX, midY, 0.0));
+		camera.Right = glm::column(view, 0).xyz();
+		camera.Up = glm::column(view, 1).xyz();
+		camera.Front = -glm::column(view, 2).xyz(); // minus because OpenGL camera looks towards negative Z.
+		camera.Position = glm::column(view, 3).xyz();
 
-}
+		updateView = false;
+	}
 
-//this is some crazy C magic to deal with the fact that glfwSet{...}Callback cannot take non-static class methods
+//this is some crazy C++ magic to deal with the fact that glfwSet{...}Callback cannot take non-static class methods
 //This was a problem because I want to access and change member variables from within the callback
 //http://stackoverflow.com/questions/7676971/pointing-to-a-function-that-is-a-class-member-glfw-setkeycallback
 void initVisualControls (Visual* visual)
 {
-
 	glfwSetWindowUserPointer(visual->window, visual);
-
-	auto key_callback = [](GLFWwindow* window, int key, int scancode, int action, int mode)
-	{
-		static_cast<Visual*>(glfwGetWindowUserPointer(window))->key_callback(window, key, scancode, action, mode);
-	};
-
-	glfwSetKeyCallback(visual->window, key_callback);
 
 	auto mouse_button_callback = [](GLFWwindow* window, int button, int action, int mods)
 	{
@@ -355,4 +251,109 @@ void initVisualControls (Visual* visual)
 	};
 
 	glfwSetScrollCallback(visual->window, scroll_callback);
+
+}
+
+void Visual::mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
+{
+	if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS) {
+		leftMousePressed = true;
+	}
+
+	if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_RELEASE) {
+		leftMousePressed = false;
+	}
+
+	if (button == GLFW_MOUSE_BUTTON_RIGHT && action == GLFW_PRESS) {
+		rightMousePressed = true;
+	}
+
+	if (button == GLFW_MOUSE_BUTTON_RIGHT && action == GLFW_RELEASE) {
+		rightMousePressed = false;
+	}
+
+}
+
+void Visual::cursor_position_callback(GLFWwindow* window, double xpos, double ypos)
+{
+	if (leftMousePressed) {
+		GLfloat xoffset = xpos - cursorPrevX;
+		GLfloat yoffset = cursorPrevY - ypos;
+
+		float fovY = tan(glm::radians(camera.Zoom / 2)) * 2 * -zTranslate;
+		float fovX = fovY * (width / height);
+
+		xTranslate += xoffset * fovX / width;
+		yTranslate += yoffset * fovY / height;
+
+		updateView = true;
+	}
+
+	if (rightMousePressed) {
+		GLfloat xoffset = (xpos - cursorPrevX) / 4.0;
+		GLfloat yoffset = (ypos - cursorPrevY) / 4.0;
+
+		camera.inclination = glm::clamp(camera.inclination - yoffset, 0.f, 90.f);
+		camera.azimuth = fmodf(camera.azimuth + xoffset, 360.f);
+
+		updateView = true;
+	}
+
+	cursorPrevX = xpos;
+	cursorPrevY = ypos;
+}
+
+void Visual::scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
+{
+	glm::mat4 modelview = view*model;
+	glm::vec4 viewport = { 0.0, 0.0, width, height };
+
+	float winX = cursorPrevX;
+	float winY = viewport[3] - cursorPrevY;
+	float winZ;
+
+	glReadPixels(winX, winY, 1, 1, GL_DEPTH_COMPONENT, GL_FLOAT, &winZ);
+	glm::vec3 screenCoords = { winX, winY, winZ };
+
+	glm::vec3 cursorPosition = glm::unProject(screenCoords, modelview, projection, viewport);
+
+	if (isinf(cursorPosition[2]) || isnan(cursorPosition[2])) {
+		cursorPosition[2] = 0.0;
+	}
+	
+	float zoomFactor = 1.1;
+	// = zooming in 
+	if (yoffset > 0.0)
+		zoomFactor = 1/1.1;
+	
+	//the width and height of the perspective view, at the depth of the cursor position 
+	glm::vec2 fovXY = camera.getFovXY(cursorPosition[2] - zTranslate, width / height);
+	camera.setZoomFromFov(fovXY.y * zoomFactor, cursorPosition[2] - zTranslate);
+
+	if (camera.Zoom > 45.0 && zTranslate * 2 > MAX_DEPTH) {
+		camera.Zoom = 45.0;
+	}
+
+	//don't want fov to be greater than 90, so cut it in half and move the world farther away from the camera to compensate
+	//not working...
+	//if (camera.Zoom > 45.0 && zTranslate*2 > MAX_DEPTH) {
+	//	float prevZoom = camera.Zoom;
+	//	camera.Zoom *= .5;
+
+	//	zTranslate *= 2;
+	//	std::cout << zTranslate << std::endl;
+	//	//need increased distance between camera and world origin, so that view does not appear to change when fov is reduced
+	//	//zTranslate = cursorPosition.z - tan(glm::radians(prevZoom)) / tan(glm::radians(camera.Zoom) * (cursorPosition.z - zTranslate));
+	//}
+	//else if (camera.Zoom > 45.0) {
+	//	camera.Zoom = 45.0;
+	//}
+
+	glm::vec2 newFovXY = camera.getFovXY(cursorPosition[2] - zTranslate, width / height);
+
+	//translate so that position under the cursor does not appear to move.
+	xTranslate += (newFovXY.x - fovXY.x) * (winX / width - .5);
+	yTranslate += (newFovXY.y - fovXY.y) * (winY / height - .5);
+
+	updateView = true;
 }
