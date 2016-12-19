@@ -121,19 +121,15 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="imgui.cpp" />
-    <ClCompile Include="imgui_demo.cpp" />
-    <ClCompile Include="imgui_draw.cpp" />
+    <ClCompile Include="../imgui/imgui.cpp" />
+    <ClCompile Include="../imgui/imgui_draw.cpp" />
+    <ClCompile Include="../imgui/imgui_demo.cpp" />
     <ClCompile Include="ImguiUtil.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="ObjectSettings.cpp" />
     <ClCompile Include="Simulation.cpp" />
     <ClCompile Include="SimulationObject.cpp" />
     <ClCompile Include="Visual.cpp" />
-  </ItemGroup>
-  <ItemGroup>
-    <Image Include="awesomeface.png" />
-    <Image Include="container.jpg" />
   </ItemGroup>
   <ItemGroup>
     <None Include="shader.fragment" />
