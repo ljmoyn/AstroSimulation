@@ -469,7 +469,7 @@ void ShowMainUi(Simulation* simulation, std::vector<std::vector<GLfloat> > * lin
 
 	//window_flags |= ImGuiWindowFlags_NoTitleBar;
 
-	ImGui::SetNextWindowSize(ImVec2(600, 680), ImGuiSetCond_FirstUseEver);
+	ImGui::SetNextWindowSize(ImVec2(400, 680));
 	if (!ImGui::Begin("Simulation Controls", showMainUi, window_flags))
 	{
 		// Early out if the window is collapsed, as an optimization.
