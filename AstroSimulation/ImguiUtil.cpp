@@ -455,6 +455,16 @@ bool InputScientific(const char* label, float* v, const char *display_format = "
 	return InputScalarScientific(label, ImGuiDataType_Float, (void*)v, display_format, extra_flags);
 }
 
+//imgui sliders might eventually get a flag that allows clamping automatically, but until then I need to handle it
+template <typename T>
+T clip(const T& n, const T& lower, const T& upper) {
+	if (n < lower)
+		return lower;
+	if (n > upper)
+		return upper;
+
+	return n;
+}
 
 #define IM_ARRAYSIZE(_ARR)  ((int)(sizeof(_ARR)/sizeof(*_ARR)))
 void ShowMainUi(Simulation* simulation, std::vector<std::vector<GLfloat> > * lines, Camera* camera, bool* isPaused, bool* showMainUi)
@@ -619,16 +629,19 @@ void ShowMainUi(Simulation* simulation, std::vector<std::vector<GLfloat> > * lin
 		ImGui::Text("Azimuth       "); ImGui::SameLine();
 		ImGui::PushItemWidth(-1);
 		ImGui::SliderFloat("##azimuth", &camera->azimuth, -360, 360.0);
+		camera->azimuth = clip(camera->azimuth, -360.0f, 360.0f);
 
 		ImGui::AlignFirstTextHeightToWidgets();
 		ImGui::Text("Inclination   "); ImGui::SameLine();
 		ImGui::PushItemWidth(-1);
 		ImGui::SliderFloat("##inclination", &camera->inclination, 0, 90.0);
+		camera->inclination = clip(camera->inclination, 0.0f, 90.0f);
 
 		ImGui::AlignFirstTextHeightToWidgets();
 		ImGui::Text("Camera Zoom   "); ImGui::SameLine();
 		ImGui::PushItemWidth(-1);
 		ImGui::SliderFloat("##zoom", &camera->Zoom, 0, 45.0);
+		camera->Zoom = clip(camera->Zoom, 0.0f, 45.0f);
 
 		ImGui::AlignFirstTextHeightToWidgets();
 		ImGui::Text("Playback Speed"); ImGui::SameLine();
@@ -642,7 +655,7 @@ void ShowMainUi(Simulation* simulation, std::vector<std::vector<GLfloat> > * lin
 		ImGui::SameLine();
 		ImGui::PushItemWidth(-1);
 		ImGui::SliderInt("##playbackSlider", &simulation->dataIndex, 0, simulation->computedData.size() - 1);
-
+		simulation->dataIndex = clip(simulation->dataIndex, 0, (int)simulation->computedData.size() - 1);
 	}
 
 	ImGui::End();
