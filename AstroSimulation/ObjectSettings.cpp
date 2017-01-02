@@ -50,7 +50,7 @@ void trim(std::string* str)
 	*str = str->substr(first, last - first + 1);
 }
 
-//colorString is a comma separated string of numbers
+//colorString is a string of floats in the format 'r.rr,g.gg,b.bb'
 void ObjectSettings::SetColorFromString(std::string colorString)
 {
 	std::vector<std::string> colorStringVec = split(colorString, ',');

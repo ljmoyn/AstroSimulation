@@ -52,11 +52,10 @@ public:
 
 	Simulation simulation;
 	GLFWwindow* window;
-	bool showSimUi = true;
 	std::vector<std::vector<GLfloat> > lines;
-	bool isPaused = true;
-	Camera camera;
+	ImguiStatus imguiStatus;
 
+	Camera camera;
 private:
 	GLuint width = 800;
 	GLuint height = 800;

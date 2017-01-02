@@ -130,15 +130,15 @@ void Visual::update(Shader shader)
 
 	ImGui_ImplGlfwGL3_NewFrame();
 
-	ShowMainUi(&simulation, &lines, &camera, &isPaused, &showSimUi);
+	ShowMainUi(&simulation, &lines, &camera, &imguiStatus);
 
-	if (!isPaused && simulation.dataIndex + simulation.playbackSpeed > (int)simulation.computedData.size() - 1) {
+	if (!imguiStatus.isPaused && simulation.dataIndex + simulation.playbackSpeed > (int)simulation.computedData.size() - 1) {
 		simulation.dataIndex = 0;
 	}
-	else if (!isPaused && simulation.dataIndex + simulation.playbackSpeed < 0) {
+	else if (!imguiStatus.isPaused && simulation.dataIndex + simulation.playbackSpeed < 0) {
 		simulation.dataIndex = (int)simulation.computedData.size() - 1;
 	}
-	else if (!isPaused) {
+	else if (!imguiStatus.isPaused) {
 		simulation.dataIndex += simulation.playbackSpeed;
 	}
 

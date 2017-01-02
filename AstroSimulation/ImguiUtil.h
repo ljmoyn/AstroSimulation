@@ -1,3 +1,6 @@
+#ifndef IMGUI_UTIL_H
+#define IMGUI_UTIL_H
+
 // ImGui GLFW binding with OpenGL3 + shaders
 // In this binding, ImTextureID is used to store an OpenGL 'GLuint' texture identifier. Read the FAQ about ImTextureID in imgui.cpp.
 
@@ -29,5 +32,13 @@ IMGUI_API void        ImGui_ImplGlfwGL3_ScrollCallback(GLFWwindow* window, doubl
 IMGUI_API void        ImGui_ImplGlfwGL3_KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods);
 IMGUI_API void        ImGui_ImplGlfwGL3_CharCallback(GLFWwindow* window, unsigned int c);
 
+struct ImguiStatus {
+	bool isPaused = true;
+	bool showMainWindow = true;
+	bool showLoadPopup = false;
+};
+
 //IMGUI_API bool        InputScientific(const char* label, float* v, const char *display_format = "%.3g", ImGuiInputTextFlags extra_flags = 0);
-IMGUI_API void        ShowMainUi(Simulation* simulation, std::vector<std::vector<GLfloat>> * lines, Camera* camera, bool* isPaused, bool* showMainUi);
+IMGUI_API void        ShowMainUi(Simulation* simulation, std::vector<std::vector<GLfloat>> * lines, Camera* camera, ImguiStatus* imguiStatus);
+
+#endif

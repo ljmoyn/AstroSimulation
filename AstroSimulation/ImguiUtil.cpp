@@ -450,6 +450,7 @@ bool InputScalarScientific(const char* label, ImGuiDataType data_type, void* dat
 	return value_changed;
 }
 
+//https://github.com/ocornut/imgui/issues/648
 bool InputScientific(const char* label, float* v, const char *display_format = "%.3g", ImGuiInputTextFlags extra_flags = 0)
 {
 	return InputScalarScientific(label, ImGuiDataType_Float, (void*)v, display_format, extra_flags);
@@ -467,40 +468,60 @@ T clip(const T& n, const T& lower, const T& upper) {
 }
 
 #define IM_ARRAYSIZE(_ARR)  ((int)(sizeof(_ARR)/sizeof(*_ARR)))
-void ShowMainUi(Simulation* simulation, std::vector<std::vector<GLfloat> > * lines, Camera* camera, bool* isPaused, bool* showMainUi)
+void ShowMainUi(Simulation* simulation, std::vector<std::vector<GLfloat> > * lines, Camera* camera, ImguiStatus* imguiStatus)
 {
 	ImGuiWindowFlags window_flags = 0;
 	window_flags |= ImGuiWindowFlags_ShowBorders;
-	window_flags |= ImGuiWindowFlags_MenuBar;
 
 	ImGuiStyle& style = ImGui::GetStyle();
 	style.Colors[ImGuiCol_PopupBg] = ImVec4(0.05f, 0.05f, 0.10f, 1.00f);
 	style.Colors[ImGuiCol_Border] = ImVec4{ 255,255,255,255 };
 
 	//window_flags |= ImGuiWindowFlags_NoTitleBar;
+	if (ImGui::BeginMainMenuBar())
+	{
+		if (ImGui::BeginMenu("File"))
+		{
+			if (ImGui::MenuItem("Save As...")) {}
+			if (ImGui::MenuItem("Load")) 
+				imguiStatus->showLoadPopup = true;	
+			ImGui::EndMenu();
+		}
+		ImGui::EndMainMenuBar();
+	}
+	//would be nicer if I could put OpenPopup inside the menu item, and get rid of showLoadPopup. Unfortunately, OpenPopup only works if it is on the same level as BeginPopupModal. 
+	//I can't put BeginPopupModal inside the menu, because it would then only show up if the menu is open (which is not the case after you click a menu item)
+	//https://github.com/ocornut/imgui/issues/331
+	if (imguiStatus->showLoadPopup)
+	{
+		ImGui::OpenPopup("Load Scenario");
+	}
+	if (ImGui::BeginPopupModal("Load Scenario"))
+	{
+		//ImGui::Selectable("1. I am selectable", &selected[0]);
 
-	ImGui::SetNextWindowSize(ImVec2(400, 680));
-	if (!ImGui::Begin("Simulation Controls", showMainUi, window_flags))
+		if (ImGui::Button("Load", ImVec2(120, 0)))
+		{
+			ImGui::CloseCurrentPopup();
+			imguiStatus->showLoadPopup = false;
+		}
+		ImGui::SameLine();
+		if (ImGui::Button("Cancel", ImVec2(120, 0)))
+		{
+			ImGui::CloseCurrentPopup();
+			imguiStatus->showLoadPopup = false;
+		}
+		ImGui::EndPopup();
+	}
+
+	ImGui::SetNextWindowSize(ImVec2(400, 680), ImGuiSetCond_FirstUseEver);
+	if (!ImGui::Begin("Simulation Controls", &imguiStatus->showMainWindow, window_flags))
 	{
 		// Early out if the window is collapsed, as an optimization.
 		ImGui::End();
 		return;
 	}
 
-	// Menu
-	bool loadFile, saveFile = false;
-	if (ImGui::BeginMenuBar())
-	{
-
-		if (ImGui::BeginMenu("File"))
-		{
-			ImGui::MenuItem("Save", NULL, &loadFile);
-			ImGui::MenuItem("Load", NULL, &saveFile);
-			ImGui::EndMenu();
-		}
-
-		ImGui::EndMenuBar();
-	}
 	ImGuiTreeNodeFlags treeFlags = 0;
 	treeFlags |= ImGuiTreeNodeFlags_DefaultOpen;
 
@@ -648,9 +669,9 @@ void ShowMainUi(Simulation* simulation, std::vector<std::vector<GLfloat> > * lin
 		ImGui::PushItemWidth(-1);
 		ImGui::InputInt("##Playback Speed", &simulation->playbackSpeed);
 
-		if (ImGui::Button(*isPaused ? "Play" : "Pause", ImVec2(97, 0)))
+		if (ImGui::Button(imguiStatus->isPaused ? "Play" : "Pause", ImVec2(97, 0)))
 		{
-			*isPaused = !(*isPaused);
+			imguiStatus->isPaused = !(imguiStatus->isPaused);
 		}
 		ImGui::SameLine();
 		ImGui::PushItemWidth(-1);
