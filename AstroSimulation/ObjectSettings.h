@@ -3,9 +3,9 @@
 
 #pragma once
 #include <algorithm>
-#include <boost/algorithm/string.hpp>
 #include <array>
 #include <vector>
+#include <sstream>
 
 class ObjectSettings
 {
