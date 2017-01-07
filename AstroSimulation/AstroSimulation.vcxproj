@@ -69,8 +69,8 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <IncludePath>C:\Visual Studio Includes;$(IncludePath)</IncludePath>
-    <LibraryPath>C:\Visual Studio Libraries;$(LibraryPath)</LibraryPath>
+    <IncludePath>../external;$(IncludePath)</IncludePath>
+    <LibraryPath>../external;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
