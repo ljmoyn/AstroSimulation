@@ -44,6 +44,11 @@ Visual::Visual(char simulationSource[])
 	setView();
 	model = glm::mat4();
 
+	imguiStatus.saveFiles = imguiStatus.GetAllFilesInFolder("../saves");
+	imguiStatus.selected.resize(imguiStatus.saveFiles.size());
+	std::fill(imguiStatus.selected.begin(), imguiStatus.selected.end(), false);
+	if (!imguiStatus.selected.empty())
+		imguiStatus.selected[0] = true;
 }
 
 Visual::~Visual()

@@ -10,6 +10,8 @@
 #include "../imgui/imgui_internal.h"
 #include "ImguiUtil.h"
 
+#include <Windows.h>
+
 // GL3W/GLFW
 #include <GL/glew.h>    // This example is using gl3w to access OpenGL functions (because it is small). You may use glew/glad/glLoadGen/etc. whatever already works for you.
 #include <GLFW/glfw3.h>
@@ -477,14 +479,15 @@ void ShowMainUi(Simulation* simulation, std::vector<std::vector<GLfloat> > * lin
 	style.Colors[ImGuiCol_PopupBg] = ImVec4(0.05f, 0.05f, 0.10f, 1.00f);
 	style.Colors[ImGuiCol_Border] = ImVec4{ 255,255,255,255 };
 
-	//window_flags |= ImGuiWindowFlags_NoTitleBar;
+	window_flags |= ImGuiWindowFlags_NoTitleBar;
 	if (ImGui::BeginMainMenuBar())
 	{
 		if (ImGui::BeginMenu("File"))
 		{
 			if (ImGui::MenuItem("Save As...")) {}
 			if (ImGui::MenuItem("Load")) 
-				imguiStatus->showLoadPopup = true;	
+				imguiStatus->showLoadPopup = true;
+
 			ImGui::EndMenu();
 		}
 		ImGui::EndMainMenuBar();
@@ -496,9 +499,18 @@ void ShowMainUi(Simulation* simulation, std::vector<std::vector<GLfloat> > * lin
 	{
 		ImGui::OpenPopup("Load Scenario");
 	}
+
 	if (ImGui::BeginPopupModal("Load Scenario"))
 	{
-		//ImGui::Selectable("1. I am selectable", &selected[0]);
+		for (int i = 0; i < imguiStatus->saveFiles.size(); i++)
+		{
+			//note: no & on imguiStatus->selected[i], and the flag to NOT automatically close popups. That was confusing to figure out...
+			if (ImGui::Selectable((std::to_string(i + 1) + ". " + imguiStatus->saveFiles[i]).c_str(), imguiStatus->selected[i], ImGuiSelectableFlags_DontClosePopups))
+			{
+				std::fill(imguiStatus->selected.begin(), imguiStatus->selected.end(), false);
+				imguiStatus->selected[i] = true;
+			}
+		}
 
 		if (ImGui::Button("Load", ImVec2(120, 0)))
 		{

@@ -11,6 +11,7 @@
 
 #include "Simulation.h"
 #include "Camera.h"
+#include <Windows.h>
 
 #include <vector>
 
@@ -36,6 +37,29 @@ struct ImguiStatus {
 	bool isPaused = true;
 	bool showMainWindow = true;
 	bool showLoadPopup = false;
+	std::vector<std::string> saveFiles;
+	std::vector<bool> selected;
+
+	//http://stackoverflow.com/questions/612097/how-can-i-get-the-list-of-files-in-a-directory-using-c-or-c
+	//windows specific
+	std::vector<std::string> GetAllFilesInFolder(std::string folderPath)
+	{
+		std::vector<std::string> names;
+		std::string search_path = folderPath + "/*.*";
+		WIN32_FIND_DATA fd;
+		HANDLE hFind = ::FindFirstFile(search_path.c_str(), &fd);
+		if (hFind != INVALID_HANDLE_VALUE) {
+			do {
+				// read all (real) files in current folder
+				// , delete '!' read other 2 default folder . and ..
+				if (!(fd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)) {
+					names.push_back(fd.cFileName);
+				}
+			} while (::FindNextFile(hFind, &fd));
+			::FindClose(hFind);
+		}
+		return names;
+	}
 };
 
 //IMGUI_API bool        InputScientific(const char* label, float* v, const char *display_format = "%.3g", ImGuiInputTextFlags extra_flags = 0);
