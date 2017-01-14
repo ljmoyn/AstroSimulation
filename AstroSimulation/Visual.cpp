@@ -1,8 +1,9 @@
 #include "Visual.h"
 
-Visual::Visual(char simulationSource[])
-	: simulation(simulationSource)
+Visual::Visual(std::string simulationSource)
 {
+	Simulation::FromXml(&simulation, simulationSource);
+
 	// Init GLFW
 	glfwInit();
 	// Set all the required options for GLFW
@@ -99,6 +100,9 @@ void Visual::drawLines() {
 
 	std::vector<SimulationObject> objects = simulation.getCurrentObjects();
 	for (int i = 0; i < objects.size(); i++) {
+
+		if (lines[i].empty())
+			continue;
 
 		glGenVertexArrays(1, &VAO);
 		glGenBuffers(1, &VBO);

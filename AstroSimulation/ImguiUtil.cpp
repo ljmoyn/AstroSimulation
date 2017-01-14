@@ -479,7 +479,6 @@ void ShowMainUi(Simulation* simulation, std::vector<std::vector<GLfloat> > * lin
 	style.Colors[ImGuiCol_PopupBg] = ImVec4(0.05f, 0.05f, 0.10f, 1.00f);
 	style.Colors[ImGuiCol_Border] = ImVec4{ 255,255,255,255 };
 
-	window_flags |= ImGuiWindowFlags_NoTitleBar;
 	if (ImGui::BeginMainMenuBar())
 	{
 		if (ImGui::BeginMenu("File"))
@@ -501,20 +500,49 @@ void ShowMainUi(Simulation* simulation, std::vector<std::vector<GLfloat> > * lin
 	}
 
 	if (ImGui::BeginPopupModal("Load Scenario"))
-	{
+	{			
+		ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(3, 12));
+		std::vector<std::string> invalidFiles = {};
+
 		for (int i = 0; i < imguiStatus->saveFiles.size(); i++)
 		{
-			//note: no & on imguiStatus->selected[i], and the flag to NOT automatically close popups. That was confusing to figure out...
-			if (ImGui::Selectable((std::to_string(i + 1) + ". " + imguiStatus->saveFiles[i]).c_str(), imguiStatus->selected[i], ImGuiSelectableFlags_DontClosePopups))
+			pugi::xml_document doc;
+			pugi::xml_parse_result result = doc.load_file(("../saves/" + imguiStatus->saveFiles[i]).c_str());
+
+			if (result)
 			{
-				std::fill(imguiStatus->selected.begin(), imguiStatus->selected.end(), false);
-				imguiStatus->selected[i] = true;
+				std::string selectableText = std::to_string(i + 1 - invalidFiles.size()) + ". " + imguiStatus->saveFiles[i];
+				//note: no & on imguiStatus->selected[i], and the flag to NOT automatically close popups. That was confusing to figure out...
+				if (ImGui::Selectable(selectableText.c_str(), imguiStatus->selected[i], ImGuiSelectableFlags_DontClosePopups))
+				{
+					std::fill(imguiStatus->selected.begin(), imguiStatus->selected.end(), false);
+					imguiStatus->selected[i] = true;
+				}
+			}
+			else
+			{
+				invalidFiles.push_back(imguiStatus->saveFiles[i] + " --- Error: " + result.description());
+			}
+		}
+
+		if (!invalidFiles.empty()) 
+		{
+			if (ImGui::CollapsingHeader("Invalid Files"))
+			{
+				for (int i = 0; i < invalidFiles.size(); i++)
+					ImGui::TextWrapped(invalidFiles[i].c_str());
 			}
 		}
 
 		if (ImGui::Button("Load", ImVec2(120, 0)))
 		{
 			ImGui::CloseCurrentPopup();
+			for (int i = 0; i < imguiStatus->selected.size(); i++)
+			{
+				if (imguiStatus->selected[i])
+					Simulation::FromXml(simulation, "../saves/" + imguiStatus->saveFiles[i]);
+			}
+
 			imguiStatus->showLoadPopup = false;
 		}
 		ImGui::SameLine();
@@ -523,6 +551,7 @@ void ShowMainUi(Simulation* simulation, std::vector<std::vector<GLfloat> > * lin
 			ImGui::CloseCurrentPopup();
 			imguiStatus->showLoadPopup = false;
 		}
+		ImGui::PopStyleVar();
 		ImGui::EndPopup();
 	}
 
@@ -596,6 +625,8 @@ void ShowMainUi(Simulation* simulation, std::vector<std::vector<GLfloat> > * lin
 
 		if (ImGui::Button("Compute", ImVec2(ImGui::GetWindowContentRegionWidth(), 30)))
 		{
+			imguiStatus->isPaused = true;
+
 			simulation->temporaryData = simulation->computedData;
 			simulation->temporaryIndex = simulation->dataIndex;
 

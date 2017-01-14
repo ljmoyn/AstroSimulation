@@ -1,22 +1,27 @@
 #include "Simulation.h"
 
-//initialize using xml file
-Simulation::Simulation(char filename[])
+Simulation::Simulation()
 {
+}
 
-	timestep.value = .25;
-	timestep.unitIndex = 2;
+Simulation::~Simulation()
+{
+}
 
-	totalTime.value = .1;
-	totalTime.unitIndex = 0;
+void Simulation::FromXml(Simulation *sim, std::string filename) {
+	sim->timestep.value = .25;
+	sim->timestep.unitIndex = 2;
 
-	playbackSpeed = 1;
+	sim->totalTime.value = .1;
+	sim->totalTime.unitIndex = 0;
+
+	sim->playbackSpeed = 1;
 
 	pugi::xml_document doc;
 
-	pugi::xml_parse_result result = doc.load_file(filename);
-	time = doc.select_node("/SavedState/Simulation/Time").node().text().as_float();
-
+	pugi::xml_parse_result result = doc.load_file(filename.c_str());
+	sim->time = doc.select_node("/SavedState/Simulation/Time").node().text().as_float();
+	sim->objectSettings = {};
 	std::vector<SimulationObject> objects = {};
 	for (auto currentObjectNode : doc.select_nodes("/SavedState/Simulation/Objects/Object"))
 	{
@@ -40,16 +45,12 @@ Simulation::Simulation(char filename[])
 		SimulationObject currentObject(name, mass, position, velocity);
 
 		objects.push_back(currentObject);
-		objectSettings.push_back(settings);
+		sim->objectSettings.push_back(settings);
 
 	}
 
-	computedData.push_back(objects);
-	dataIndex = 0;
-}
-
-Simulation::~Simulation()
-{
+	sim->computedData = {objects};
+	sim->dataIndex = 0;
 }
 
 void Simulation::step(float dt) {

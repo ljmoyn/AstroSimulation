@@ -36,7 +36,7 @@
 class Visual
 {
 public:
-	Visual(char simulationSource[]);
+	Visual(std::string simulationSource);
 	~Visual();
 
 	void mouse_button_callback(GLFWwindow* window, int button, int action, int mods);
