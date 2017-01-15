@@ -74,3 +74,17 @@ void ObjectSettings::SetColorFromString(std::string colorString)
 	color[1] = g;
 	color[2] = b;
 }
+
+//sad that I have to do this
+std::string ObjectSettings::TypeToString() 
+{
+	switch (displayType) 
+	{
+		case DisplayTypes::Point :
+			return "Point";
+		case DisplayTypes::Image:
+			return "Image";
+		case DisplayTypes::Sphere:
+			return "Sphere";
+	}
+}

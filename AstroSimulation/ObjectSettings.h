@@ -15,9 +15,10 @@ public:
 
 	void SetDisplayType(std::string type);
 	void SetColorFromString(std::string colorString);
-
+	std::string TypeToString();
 	bool showHistory;
 	enum class DisplayTypes { Point, Image, Sphere};
+
 	DisplayTypes displayType;
 	std::array<float, 3> color;
 

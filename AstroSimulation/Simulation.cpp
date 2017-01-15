@@ -53,6 +53,44 @@ void Simulation::FromXml(Simulation *sim, std::string filename) {
 	sim->dataIndex = 0;
 }
 
+void Simulation::ToXml(Simulation simulation, std::string filename) {
+	pugi::xml_document xml;
+	pugi::xml_node root = xml.append_child("SavedState");
+	pugi::xml_node simulationNode = root.append_child("Simulation");
+	simulationNode.append_child("Time").set_value(std::to_string(simulation.time).c_str());
+
+	pugi::xml_node objectsNode = root.append_child("Objects");
+	std::vector<SimulationObject> objects = simulation.getCurrentObjects();
+	for (int i = 0; i < objects.size(); i++)
+	{
+		pugi::xml_node objectNode = objectsNode.append_child("Object");
+		objectNode.append_child("Name").set_value(objects[i].name.c_str());
+		objectNode.append_child("Mass").set_value(std::to_string(objects[i].mass).c_str());
+
+		pugi::xml_node position = objectNode.append_child("Position");
+		pugi::xml_node velocity = objectNode.append_child("Velocity");
+		pugi::xml_node settings = objectNode.append_child("Settings");
+
+		position.append_child("x").set_value(std::to_string(objects[i].position[0]).c_str());
+		position.append_child("y").set_value(std::to_string(objects[i].position[1]).c_str());
+		position.append_child("z").set_value(std::to_string(objects[i].position[2]).c_str());
+
+		velocity.append_child("Vx").set_value(std::to_string(objects[i].velocity[0]).c_str());
+		velocity.append_child("Vy").set_value(std::to_string(objects[i].velocity[1]).c_str());
+		velocity.append_child("Vz").set_value(std::to_string(objects[i].velocity[2]).c_str());
+
+		settings.append_child("ShowHistory").set_value(std::to_string(simulation.objectSettings[i].showHistory).c_str());
+		settings.append_child("DisplayType").set_value(simulation.objectSettings[i].TypeToString().c_str());
+
+		std::string colorString = std::to_string(simulation.objectSettings[i].color[0]) + "," +
+			std::to_string(simulation.objectSettings[i].color[1]) + "," +
+			std::to_string(simulation.objectSettings[i].color[2]);
+		settings.append_child("Color").set_value(colorString.c_str());
+	}
+
+	xml.save_file(("../saves/" + filename).c_str());
+}
+
 void Simulation::step(float dt) {
 	if (dt == 0)
 		return;

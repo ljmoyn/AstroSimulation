@@ -25,6 +25,7 @@ public:
 	std::vector<std::vector<float>> getAccelerations(std::vector<SimulationObject> objects = {});
 	std::vector<SimulationObject> getCurrentObjects();
 	static void FromXml(Simulation* simulation, std::string filename);
+	static void ToXml(Simulation simulation, std::string filename);
 
 	//keep objects and objectSettings as separate objects, because I want 
 	//SimulationObject to contain only the fundamental object data, rather than
