@@ -483,7 +483,8 @@ void ShowMainUi(Simulation* simulation, std::vector<std::vector<GLfloat> > * lin
 	{
 		if (ImGui::BeginMenu("File"))
 		{
-			if (ImGui::MenuItem("Save As...")) {}
+			if (ImGui::MenuItem("Save As..."))
+				imguiStatus->showSavePopup = true;
 			if (ImGui::MenuItem("Load")) 
 				imguiStatus->showLoadPopup = true;
 
@@ -552,6 +553,33 @@ void ShowMainUi(Simulation* simulation, std::vector<std::vector<GLfloat> > * lin
 			imguiStatus->showLoadPopup = false;
 		}
 		ImGui::PopStyleVar();
+		ImGui::EndPopup();
+	}
+
+	if (imguiStatus->showSavePopup)
+	{
+		ImGui::OpenPopup("Save");
+	}
+
+	if (ImGui::BeginPopupModal("Save"))
+	{
+		static char filename[128] = "";
+		ImGui::Text("Name"); ImGui::SameLine();
+		ImGui::InputText("##SaveName", filename, IM_ARRAYSIZE(filename));
+
+		if (ImGui::Button("Save##Button", ImVec2(120, 0)))
+		{
+			Simulation::ToXml(*simulation, "../saves/" + std::string(filename) + ".xml");
+			ImGui::CloseCurrentPopup();
+			imguiStatus->showSavePopup = false;
+		}
+		ImGui::SameLine();
+		if (ImGui::Button("Cancel", ImVec2(120, 0)))
+		{
+			ImGui::CloseCurrentPopup();
+			imguiStatus->showSavePopup = false;
+		}
+
 		ImGui::EndPopup();
 	}
 

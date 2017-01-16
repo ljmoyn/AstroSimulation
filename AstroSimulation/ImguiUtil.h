@@ -37,6 +37,7 @@ struct ImguiStatus {
 	bool isPaused = true;
 	bool showMainWindow = true;
 	bool showLoadPopup = false;
+	bool showSavePopup = false;
 	std::vector<std::string> saveFiles;
 	std::vector<bool> selected;
 
