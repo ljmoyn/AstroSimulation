@@ -8,13 +8,8 @@ Simulation::~Simulation()
 {
 }
 
-void Simulation::FromXml(Simulation *sim, std::string filename) {
-	sim->timestep.value = .25;
-	sim->timestep.unitIndex = 2;
-
-	sim->totalTime.value = .1;
-	sim->totalTime.unitIndex = 0;
-
+void Simulation::FromXml(Simulation *sim, std::string filename)
+{
 	sim->playbackSpeed = 1;
 
 	pugi::xml_document doc;

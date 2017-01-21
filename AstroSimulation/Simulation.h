@@ -5,6 +5,8 @@
 #include "SimulationObject.h"
 #include "ObjectSettings.h"
 #include "pugixml/pugixml.hpp"
+#include "ValueWithUnits.h"
+
 #include <fstream>
 #include <iostream>
 #include <vector>
@@ -37,15 +39,8 @@ public:
 	std::vector<std::vector<SimulationObject>> temporaryData;
 	int temporaryIndex;
 
-	struct timeWithUnits {
-		float value;
-		int unitIndex;
-		const char* unitStrings[5] = { "Years", "Months", "Days", "Hours", "Minutes" };
-		const float conversionFactors[5] = { 1.0f, 1.0f / 12.0f, 1.0f / 365.0f, 1.0f / (365.0f * 24.0f), 1.0f / (365.0f * 24.0f * 60.0f) };
-		float getConvertedValue() {
-			return value * conversionFactors[unitIndex];
-		}
-	} timestep, totalTime;
+	ValueWithUnits<UnitType::Time> timestep = ValueWithUnits<UnitType::Time>(.25, 2);
+	ValueWithUnits<UnitType::Time> totalTime = ValueWithUnits<UnitType::Time>(.1, 0);
 
 	int playbackSpeed;
 	int dataIndex;

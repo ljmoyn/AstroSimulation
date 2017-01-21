@@ -612,7 +612,7 @@ void ShowMainUi(Simulation* simulation, std::vector<std::vector<GLfloat> > * lin
 		ImGui::PushItemWidth(200);
 		ImGui::InputFloat("##Timestep", &simulation->timestep.value, 0.001f); ImGui::SameLine();
 		ImGui::PushItemWidth(80);
-		ImGui::Combo("##TimestepUnits", &simulation->timestep.unitIndex, simulation->timestep.unitStrings, IM_ARRAYSIZE(simulation->timestep.unitStrings));
+		ImGui::Combo("##TimestepUnits", &simulation->timestep.unitIndex, simulation->timestep.timeUnits, IM_ARRAYSIZE(simulation->timestep.timeUnits));
 		{
 
 		}
@@ -622,13 +622,13 @@ void ShowMainUi(Simulation* simulation, std::vector<std::vector<GLfloat> > * lin
 		ImGui::PushItemWidth(200);
 		ImGui::InputFloat("##Total Time", &simulation->totalTime.value, 0.01f); ImGui::SameLine();
 		ImGui::PushItemWidth(80);
-		ImGui::Combo("##TotalTimeUnits", &simulation->totalTime.unitIndex, simulation->totalTime.unitStrings, IM_ARRAYSIZE(simulation->totalTime.unitStrings));
+		ImGui::Combo("##TotalTimeUnits", &simulation->totalTime.unitIndex, simulation->totalTime.timeUnits, IM_ARRAYSIZE(simulation->totalTime.timeUnits));
 		{
 
 		}
 		ImGui::PopItemWidth();
 
-		int totalTimesteps = round(simulation->totalTime.getConvertedValue() / simulation->timestep.getConvertedValue());
+		int totalTimesteps = round(simulation->totalTime.GetConvertedValue() / simulation->timestep.GetConvertedValue());
 		ImGui::BeginChild("ObjectContainer", ImVec2(ImGui::GetWindowContentRegionWidth(), 200), false);
 
 		ImGui::PushItemWidth(300);
@@ -684,7 +684,7 @@ void ShowMainUi(Simulation* simulation, std::vector<std::vector<GLfloat> > * lin
 			if (simulation->dataIndex + 1 > totalTimesteps)
 				ImGui::CloseCurrentPopup();
 			else {
-				simulation->step(simulation->timestep.getConvertedValue());
+				simulation->step(simulation->timestep.GetConvertedValue());
 
 				std::vector<SimulationObject> currentFrame = simulation->getCurrentObjects();
 				for (int i = 0; i < currentFrame.size(); i++) {
