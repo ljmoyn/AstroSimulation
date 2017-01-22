@@ -570,6 +570,8 @@ void ShowMainUi(Simulation* simulation, std::vector<std::vector<GLfloat> > * lin
 		if (ImGui::Button("Save##Button", ImVec2(120, 0)))
 		{
 			Simulation::ToXml(*simulation, "../saves/" + std::string(filename) + ".xml");
+			imguiStatus->saveFiles.push_back(std::string(filename) + ".xml");
+			imguiStatus->selected.push_back(false);
 			ImGui::CloseCurrentPopup();
 			imguiStatus->showSavePopup = false;
 		}
