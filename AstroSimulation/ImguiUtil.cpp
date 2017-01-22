@@ -612,7 +612,7 @@ void ShowMainUi(Simulation* simulation, std::vector<std::vector<GLfloat> > * lin
 		ImGui::PushItemWidth(200);
 		ImGui::InputFloat("##Timestep", &simulation->timestep.value, 0.001f); ImGui::SameLine();
 		ImGui::PushItemWidth(80);
-		ImGui::Combo("##TimestepUnits", &simulation->timestep.unitIndex, simulation->timestep.timeUnits, IM_ARRAYSIZE(simulation->timestep.timeUnits));
+		ImGui::Combo("##TimestepUnits", &simulation->timestep.unitIndex, simulation->timestep.unitData.timeUnits, IM_ARRAYSIZE(simulation->timestep.unitData.timeUnits));
 		{
 
 		}
@@ -622,7 +622,7 @@ void ShowMainUi(Simulation* simulation, std::vector<std::vector<GLfloat> > * lin
 		ImGui::PushItemWidth(200);
 		ImGui::InputFloat("##Total Time", &simulation->totalTime.value, 0.01f); ImGui::SameLine();
 		ImGui::PushItemWidth(80);
-		ImGui::Combo("##TotalTimeUnits", &simulation->totalTime.unitIndex, simulation->totalTime.timeUnits, IM_ARRAYSIZE(simulation->totalTime.timeUnits));
+		ImGui::Combo("##TotalTimeUnits", &simulation->totalTime.unitIndex, simulation->totalTime.unitData.timeUnits, IM_ARRAYSIZE(simulation->totalTime.unitData.timeUnits));
 		{
 
 		}
@@ -638,15 +638,15 @@ void ShowMainUi(Simulation* simulation, std::vector<std::vector<GLfloat> > * lin
 			{
 				ImGui::AlignFirstTextHeightToWidgets();
 				ImGui::Text("Mass    "); ImGui::SameLine();
-				InputScientific(("##Mass " + currentObject.name).c_str(), &simulation->computedData[simulation->dataIndex][i].mass);
+				InputScientific(("##Mass " + currentObject.name).c_str(), &simulation->computedData[simulation->dataIndex][i].mass.value);
 
 				ImGui::AlignFirstTextHeightToWidgets();
 				ImGui::Text("Position"); ImGui::SameLine();
-				ImGui::InputFloat3(("##Position " + currentObject.name).c_str(), &simulation->computedData[simulation->dataIndex][i].position[0]);
+				ImGui::InputFloat3(("##Position " + currentObject.name).c_str(), &simulation->computedData[simulation->dataIndex][i].position.value[0]);
 
 				ImGui::AlignFirstTextHeightToWidgets();
 				ImGui::Text("Velocity"); ImGui::SameLine();
-				ImGui::InputFloat3(("##Velocity " + currentObject.name).c_str(), &simulation->computedData[simulation->dataIndex][i].velocity[0]);
+				ImGui::InputFloat3(("##Velocity " + currentObject.name).c_str(), &simulation->computedData[simulation->dataIndex][i].velocity.value[0]);
 			}
 		}
 		ImGui::EndChild();
@@ -664,9 +664,9 @@ void ShowMainUi(Simulation* simulation, std::vector<std::vector<GLfloat> > * lin
 			*lines = {};
 			for (int i = 0; i < simulation->getCurrentObjects().size(); i++) {
 				lines->push_back({
-					currentFrame[i].position[0],
-					currentFrame[i].position[1],
-					currentFrame[i].position[2],
+					currentFrame[i].position.value[0],
+					currentFrame[i].position.value[1],
+					currentFrame[i].position.value[2],
 					simulation->objectSettings[i].color[0],
 					simulation->objectSettings[i].color[1],
 					simulation->objectSettings[i].color[2]
@@ -688,9 +688,9 @@ void ShowMainUi(Simulation* simulation, std::vector<std::vector<GLfloat> > * lin
 
 				std::vector<SimulationObject> currentFrame = simulation->getCurrentObjects();
 				for (int i = 0; i < currentFrame.size(); i++) {
-					(*lines)[i].push_back(currentFrame[i].position[0]);
-					(*lines)[i].push_back(currentFrame[i].position[1]);
-					(*lines)[i].push_back(currentFrame[i].position[2]);
+					(*lines)[i].push_back(currentFrame[i].position.value[0]);
+					(*lines)[i].push_back(currentFrame[i].position.value[1]);
+					(*lines)[i].push_back(currentFrame[i].position.value[2]);
 
 					(*lines)[i].push_back(simulation->objectSettings[i].color[0]);
 					(*lines)[i].push_back(simulation->objectSettings[i].color[1]);

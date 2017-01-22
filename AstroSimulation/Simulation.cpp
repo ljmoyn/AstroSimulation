@@ -25,12 +25,12 @@ void Simulation::FromXml(Simulation *sim, std::string filename)
 		float x = currentObjectNode.node().child("Position").child("x").text().as_float();
 		float y = currentObjectNode.node().child("Position").child("y").text().as_float();
 		float z = currentObjectNode.node().child("Position").child("z").text().as_float();
-		std::array<float, 3> position = { x, y, z };
+		float position[3] = { x, y, z };
 
 		float Vx = currentObjectNode.node().child("Velocity").child("Vx").text().as_float();
 		float Vy = currentObjectNode.node().child("Velocity").child("Vy").text().as_float();
 		float Vz = currentObjectNode.node().child("Velocity").child("Vz").text().as_float();
-		std::array<float, 3> velocity = { Vx, Vy, Vz };
+		float velocity[3] = { Vx, Vy, Vz };
 
 		bool showHistory = currentObjectNode.node().child("Settings").child("ShowHistory").text().as_bool();
 		std::string displayType = currentObjectNode.node().child("Settings").child("DisplayType").text().as_string();
@@ -60,19 +60,23 @@ void Simulation::ToXml(Simulation simulation, std::string filename) {
 	{
 		pugi::xml_node objectNode = objectsNode.append_child("Object");
 		objectNode.append_child("Name").append_child(pugi::node_pcdata).set_value(objects[i].name.c_str());
-		objectNode.append_child("Mass").append_child(pugi::node_pcdata).set_value(std::to_string(objects[i].mass).c_str());
+		objectNode.append_child("Mass").append_child(pugi::node_pcdata).set_value(std::to_string(objects[i].mass.value).c_str());
 
 		pugi::xml_node position = objectNode.append_child("Position");
 		pugi::xml_node velocity = objectNode.append_child("Velocity");
 		pugi::xml_node settings = objectNode.append_child("Settings");
 
-		position.append_child("x").append_child(pugi::node_pcdata).set_value(std::to_string(objects[i].position[0]).c_str());
-		position.append_child("y").append_child(pugi::node_pcdata).set_value(std::to_string(objects[i].position[1]).c_str());
-		position.append_child("z").append_child(pugi::node_pcdata).set_value(std::to_string(objects[i].position[2]).c_str());
+		float convertedPosition[3], convertedVelocity[3];
+		objects[i].position.GetConvertedValue(convertedPosition);
+		objects[i].velocity.GetConvertedValue(convertedVelocity);
 
-		velocity.append_child("Vx").append_child(pugi::node_pcdata).set_value(std::to_string(objects[i].velocity[0]).c_str());
-		velocity.append_child("Vy").append_child(pugi::node_pcdata).set_value(std::to_string(objects[i].velocity[1]).c_str());
-		velocity.append_child("Vz").append_child(pugi::node_pcdata).set_value(std::to_string(objects[i].velocity[2]).c_str());
+		position.append_child("x").append_child(pugi::node_pcdata).set_value(std::to_string(convertedPosition[0]).c_str());
+		position.append_child("y").append_child(pugi::node_pcdata).set_value(std::to_string(convertedPosition[1]).c_str());
+		position.append_child("z").append_child(pugi::node_pcdata).set_value(std::to_string(convertedPosition[2]).c_str());
+
+		velocity.append_child("Vx").append_child(pugi::node_pcdata).set_value(std::to_string(convertedVelocity[0]).c_str());
+		velocity.append_child("Vy").append_child(pugi::node_pcdata).set_value(std::to_string(convertedVelocity[1]).c_str());
+		velocity.append_child("Vz").append_child(pugi::node_pcdata).set_value(std::to_string(convertedVelocity[2]).c_str());
 
 		settings.append_child("ShowHistory").append_child(pugi::node_pcdata).set_value(std::to_string(simulation.objectSettings[i].showHistory).c_str());
 		settings.append_child("DisplayType").append_child(pugi::node_pcdata).set_value(simulation.objectSettings[i].TypeToString().c_str());
@@ -114,14 +118,14 @@ std::vector<std::vector<float>> Simulation::getAccelerations(std::vector<Simulat
 		std::vector<float> acceleration = { 0,0,0 };
 		for (int j = 0; j < objects.size(); j++) {
 			if (i != j) {
-				std::array<float, 3> x1, x2;
-				std::copy(std::begin(objects[i].position), std::end(objects[i].position), std::begin(x1));
-				std::copy(std::begin(objects[j].position), std::end(objects[j].position), std::begin(x2));
+				float x1[3], x2[3];
+				objects[i].position.GetConvertedValue(x1);
+				objects[j].position.GetConvertedValue(x2);
 
 				float r = sqrt(pow(x1[0] - x2[0], 2) + pow(x1[1] - x2[1], 2) + pow(x1[2] - x2[2], 2));
-				std::array<float, 3> rUnit = { (x1[0] - x2[0]) / r, (x1[1] - x2[1]) / r, (x1[2] - x2[2]) / r };
+				float rUnit[3] = { (x1[0] - x2[0]) / r, (x1[1] - x2[1]) / r, (x1[2] - x2[2]) / r };
 				for (int k = 0; k < 3; k++)
-					acceleration[k] += -G * objects[j].mass * rUnit[k] / pow(r, 2);
+					acceleration[k] += -G * objects[j].mass.value * rUnit[k] / pow(r, 2);
 			}
 		}
 		accelerations.push_back(acceleration);
@@ -138,16 +142,16 @@ void Simulation::velocityVerlet(float dt) {
 	for (int i = 0; i < currentObjects.size(); i++) {
 		for (int j = 0; j < 3; j++) {
 			//get velocities of objects at + 1/2 timestep.
-			currentObjects[i].velocity[j] += .5 * dt * accelerations[i][j];
+			currentObjects[i].velocity.value[j] += .5 * dt * accelerations[i][j];
 			//get position at +1 timestep, using velocity at half timestep
-			currentObjects[i].position[j] += dt * currentObjects[i].velocity[j];
+			currentObjects[i].position.value[j] += dt * currentObjects[i].velocity.value[j];
 		}
 	}
 
 	accelerations = getAccelerations(currentObjects);
 	for (int i = 0; i < currentObjects.size(); i++) {
 		for (int j = 0; j < 3; j++) {
-			currentObjects[i].velocity[j] += .5 * dt * accelerations[i][j];
+			currentObjects[i].velocity.value[j] += .5 * dt * accelerations[i][j];
 		}
 	}
 
