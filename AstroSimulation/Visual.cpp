@@ -151,7 +151,7 @@ void Visual::update(Shader shader)
 		simulation.dataIndex += simulation.playbackSpeed;
 	}
 
-	simulation.time = simulation.timestep.GetConvertedValue() * simulation.dataIndex;
+	simulation.time = simulation.timestep.GetBaseValue() * simulation.dataIndex;
 
 	// Clear the colorbuffer
 	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);

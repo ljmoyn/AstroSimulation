@@ -67,8 +67,8 @@ void Simulation::ToXml(Simulation simulation, std::string filename) {
 		pugi::xml_node settings = objectNode.append_child("Settings");
 
 		float convertedPosition[3], convertedVelocity[3];
-		objects[i].position.GetConvertedValue(convertedPosition);
-		objects[i].velocity.GetConvertedValue(convertedVelocity);
+		objects[i].position.GetBaseValue(convertedPosition);
+		objects[i].velocity.GetBaseValue(convertedVelocity);
 
 		position.append_child("x").append_child(pugi::node_pcdata).set_value(std::to_string(convertedPosition[0]).c_str());
 		position.append_child("y").append_child(pugi::node_pcdata).set_value(std::to_string(convertedPosition[1]).c_str());
@@ -119,8 +119,8 @@ std::vector<std::vector<float>> Simulation::getAccelerations(std::vector<Simulat
 		for (int j = 0; j < objects.size(); j++) {
 			if (i != j) {
 				float x1[3], x2[3];
-				objects[i].position.GetConvertedValue(x1);
-				objects[j].position.GetConvertedValue(x2);
+				std::copy(std::begin(objects[i].position.value), std::end(objects[i].position.value), std::begin(x1));
+				std::copy(std::begin(objects[j].position.value), std::end(objects[j].position.value), std::begin(x2));
 
 				float r = sqrt(pow(x1[0] - x2[0], 2) + pow(x1[1] - x2[1], 2) + pow(x1[2] - x2[2], 2));
 				float rUnit[3] = { (x1[0] - x2[0]) / r, (x1[1] - x2[1]) / r, (x1[2] - x2[2]) / r };
@@ -134,9 +134,44 @@ std::vector<std::vector<float>> Simulation::getAccelerations(std::vector<Simulat
 	return accelerations;
 }
 
+std::vector<std::map<std::string, int> > Simulation::ConvertObjectsToBaseUnits(std::vector<SimulationObject>* objects)
+{
+	std::vector<std::map<std::string,int> > originalUnits = {};
+	for (int i = 0; i < objects->size(); i++) {
+		std::map<std::string, int> units;
+
+		// first insert function version (single parameter):
+		units.insert(std::pair<std::string, int>("mass", (*objects)[i].mass.unitIndex));
+		units.insert(std::pair<std::string, int>("position", (*objects)[i].position.unitIndex));
+		units.insert(std::pair<std::string, int>("velocity", (*objects)[i].velocity.unitIndex));
+		originalUnits.push_back(units);
+
+		(*objects)[i].position.SetBaseUnits();
+		(*objects)[i].velocity.SetBaseUnits();
+		(*objects)[i].mass.SetBaseUnits();
+	}
+
+	return originalUnits;
+}
+
+void Simulation::ConvertObjectsToUnits(std::vector<SimulationObject>* objects, std::vector<std::map<std::string, int> > units) {
+
+	if (objects->size() != units.size())
+		return;
+
+	for (int i = 0; i < objects->size(); i++) {
+		(*objects)[i].position.ConvertToUnits(units[i]["position"]);
+		(*objects)[i].velocity.ConvertToUnits(units[i]["velocity"]);
+		(*objects)[i].mass.ConvertToUnits(units[i]["mass"]);
+	}
+}
+
+
+
 //source: http://physics.ucsc.edu/~peter/242/leapfrog.pdf
 void Simulation::velocityVerlet(float dt) {
 	std::vector<SimulationObject> currentObjects = computedData[dataIndex];
+	std::vector<std::map<std::string, int> > originalUnits = Simulation::ConvertObjectsToBaseUnits(&currentObjects);
 	std::vector<std::vector<float>> accelerations = getAccelerations(currentObjects);
 
 	for (int i = 0; i < currentObjects.size(); i++) {
@@ -154,6 +189,8 @@ void Simulation::velocityVerlet(float dt) {
 			currentObjects[i].velocity.value[j] += .5 * dt * accelerations[i][j];
 		}
 	}
+
+	Simulation::ConvertObjectsToUnits(&currentObjects, originalUnits);
 
 	computedData.push_back(currentObjects);
 	dataIndex++;

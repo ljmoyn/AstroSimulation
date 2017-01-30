@@ -13,15 +13,16 @@ struct UnitData {
 
 	const char* massUnits[4] = { "Kg", "Lbs", "Earth Mass", "Solar Mass" };
 	const float massConversions[4] = { 1.0f,
-		2.20462f, //lbs
-		1.0f / (5.972f * powf(10,24)), // earth mass
-		1.0f / (1.989f * powf(10,30)) //solar mass
+		0.45359237f, //lbs
+		5.972f * powf(10,24), // earth mass
+		1.989f * powf(10,30) //solar mass
 	};
 
-	const char* positionUnits[8] = { "GigaMeters", "M", "Km", "Mi", "AU", "Light Seconds", "Light Minutes", "Light Years" };
-	const float positionConversions[8] = { 1.0f,
+	const char* positionUnits[8] = { "M", "Km", "GigaMeters", "Mi", "AU", "Light Seconds", "Light Minutes", "Light Years" };
+	const float positionConversions[8] = { 
 		1.0f / powf(10,9), //M
 		1.0f / powf(10,6), //Km
+		1.0f, // Gm
 		1.60934f * powf(10,-6), // Mi
 		149.598f, //AU
 		0.299792f, //light second
@@ -29,12 +30,13 @@ struct UnitData {
 		9.461f * powf(10,6)//light year
 	};
 
-	const char* velocityUnits[6] = { "GM / Year", "M/s", "Km/s", "Km/Hr", "Mi/Hr", "c" };
-	const float velocityConversions[6] = { 1.0f,
+	const char* velocityUnits[6] = { "M/s", "Km/s", "Km/Hr", "Mi/Hr", "GM / Year", "c" };
+	const float velocityConversions[6] = {
 		31.7098f, //M / s
 		0.0317098f, //Km / s
 		114.155f, // Km / hr
 		70.9326284499f, //Mi/Hr
+		1.0f, // Gm / Yr
 		9460528.4f, //c
 	};
 };
@@ -47,7 +49,8 @@ public:
 	ValueWithUnits() {}
 	ValueWithUnits(float val, int uIndex) : value(val), unitIndex(uIndex){}
 	~ValueWithUnits() {}
-	float GetConvertedValue() 
+
+	float GetBaseValue() 
 	{
 		switch (type)
 		{
@@ -60,6 +63,49 @@ public:
 		case UnitType::Time:
 			return value * unitData.timeConversions[unitIndex];
 		}
+	}
+
+	void SetBaseUnits()
+	{
+		value = GetBaseValue();
+
+		switch (type)
+		{
+		case UnitType::Position:
+			unitIndex = 2;
+			break;
+		case UnitType::Velocity:
+			unitIndex = 4;
+			break;
+		case UnitType::Mass:
+			unitIndex = 0;
+			break;
+		case UnitType::Time:
+			unitIndex = 0;
+			break;
+		}
+	}
+
+	void ConvertToUnits(int i) 
+	{
+		SetBaseUnits();
+		switch (type)
+		{
+		case UnitType::Position:
+			value /= unitData.positionConversions[i];
+			break;
+		case UnitType::Velocity:
+			value /= unitData.velocityConversions[i];
+			break;
+		case UnitType::Mass:
+			value /= unitData.massConversions[i];
+			break;
+		case UnitType::Time:
+			value /= unitData.timeConversions[i];
+			break;
+		}
+
+		unitIndex = i;
 	}
 
 	float value;
@@ -86,7 +132,7 @@ public:
 			value[i] = val[i];
 	}
 	~ValueWithUnits3() {}
-	void GetConvertedValue(float (&result)[3])
+	void GetBaseValue(float (&result)[3])
 	{
 		for (int i = 0; i < 3; i++) {
 			switch (type)
@@ -105,6 +151,66 @@ public:
 				break;
 			}
 		}
+	}
+
+	float GetBaseValue(int i)
+	{
+		switch (type)
+		{
+		case UnitType::Position:
+			return value[i] * unitData.positionConversions[unitIndex];
+		case UnitType::Velocity:
+			return value[i] * unitData.velocityConversions[unitIndex];
+		case UnitType::Mass:
+			return value[i] * unitData.massConversions[unitIndex];
+		case UnitType::Time:
+			return value[i] * unitData.timeConversions[unitIndex];
+		}
+	}
+
+	void SetBaseUnits()
+	{
+		GetBaseValue(value);
+
+		switch (type)
+		{
+		case UnitType::Position:
+			unitIndex = 2;
+			break;
+		case UnitType::Velocity:
+			unitIndex = 4;
+			break;
+		case UnitType::Mass:
+			unitIndex = 0;
+			break;
+		case UnitType::Time:
+			unitIndex = 2;
+			break;
+		}
+	}
+
+	void ConvertToUnits(int i)
+	{
+		SetBaseUnits();
+		for (int j = 0; j < 3; j++) {
+			switch (type)
+			{
+			case UnitType::Position:
+				value[j] /= unitData.positionConversions[i];
+				break;
+			case UnitType::Velocity:
+				value[j] /= unitData.velocityConversions[i];
+				break;
+			case UnitType::Mass:
+				value[j] /= unitData.massConversions[i];
+				break;
+			case UnitType::Time:
+				value[j] /= unitData.timeConversions[i];
+				break;
+			}
+		}
+
+		unitIndex = i;
 	}
 
 	float value[3];

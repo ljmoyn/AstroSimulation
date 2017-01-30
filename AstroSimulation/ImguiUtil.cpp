@@ -469,6 +469,58 @@ T clip(const T& n, const T& lower, const T& upper) {
 	return n;
 }
 
+template <UnitType type>
+void UnitCombo(std::string id, ValueWithUnits<type>* value) {
+	bool changed = false;
+	int units = value->unitIndex;
+	switch (type)
+	{
+	case UnitType::Position:
+		changed = ImGui::Combo(id.c_str(), &units, value->unitData.positionUnits, IM_ARRAYSIZE(value->unitData.positionUnits));
+		break;
+	case UnitType::Velocity:
+		changed = ImGui::Combo(id.c_str(), &units, value->unitData.velocityUnits, IM_ARRAYSIZE(value->unitData.velocityUnits));
+		break;
+	case UnitType::Mass:
+		changed = ImGui::Combo(id.c_str(), &units, value->unitData.massUnits, IM_ARRAYSIZE(value->unitData.massUnits));
+		break;
+	case UnitType::Time:
+		changed = ImGui::Combo(id.c_str(), &units, value->unitData.timeUnits, IM_ARRAYSIZE(value->unitData.timeUnits));
+		break;
+	}
+	if (changed) {
+		value->SetBaseUnits();
+		value->ConvertToUnits(units);
+		value->unitIndex = units;
+	}
+}
+
+template <UnitType type>
+void UnitCombo3(std::string id, ValueWithUnits3<type>* value) {
+	bool changed = false;
+	int units = value->unitIndex;
+	switch (type)
+	{
+	case UnitType::Position:
+		changed = ImGui::Combo(id.c_str(), &units, value->unitData.positionUnits, IM_ARRAYSIZE(value->unitData.positionUnits));
+		break;
+	case UnitType::Velocity:
+		changed = ImGui::Combo(id.c_str(), &units, value->unitData.velocityUnits, IM_ARRAYSIZE(value->unitData.velocityUnits));
+		break;
+	case UnitType::Mass:
+		changed = ImGui::Combo(id.c_str(), &units, value->unitData.massUnits, IM_ARRAYSIZE(value->unitData.massUnits));
+		break;
+	case UnitType::Time:
+		changed = ImGui::Combo(id.c_str(), &units, value->unitData.timeUnits, IM_ARRAYSIZE(value->unitData.timeUnits));
+		break;
+	}
+	if (changed) {
+		value->SetBaseUnits();
+		value->ConvertToUnits(units);
+		value->unitIndex = units;
+	}
+}
+
 #define IM_ARRAYSIZE(_ARR)  ((int)(sizeof(_ARR)/sizeof(*_ARR)))
 void ShowMainUi(Simulation* simulation, std::vector<std::vector<GLfloat> > * lines, Camera* camera, ImguiStatus* imguiStatus)
 {
@@ -585,7 +637,7 @@ void ShowMainUi(Simulation* simulation, std::vector<std::vector<GLfloat> > * lin
 		ImGui::EndPopup();
 	}
 
-	ImGui::SetNextWindowSize(ImVec2(400, 680), ImGuiSetCond_FirstUseEver);
+	ImGui::SetNextWindowSize(ImVec2(500, 680), ImGuiSetCond_FirstUseEver);
 	if (!ImGui::Begin("Simulation Controls", &imguiStatus->showMainWindow, window_flags))
 	{
 		// Early out if the window is collapsed, as an optimization.
@@ -604,9 +656,6 @@ void ShowMainUi(Simulation* simulation, std::vector<std::vector<GLfloat> > * lin
 		ImGui::Text("Algorithm "); ImGui::SameLine();
 		ImGui::PushItemWidth(288);
 		ImGui::Combo("##Algorithm", &simulation->selectedAlgorithm, simulation->algorithms, IM_ARRAYSIZE(simulation->algorithms));
-		{
-
-		}
 		ImGui::PopItemWidth();
 
 		ImGui::AlignFirstTextHeightToWidgets();
@@ -614,23 +663,18 @@ void ShowMainUi(Simulation* simulation, std::vector<std::vector<GLfloat> > * lin
 		ImGui::PushItemWidth(200);
 		ImGui::InputFloat("##Timestep", &simulation->timestep.value, 0.001f); ImGui::SameLine();
 		ImGui::PushItemWidth(80);
-		ImGui::Combo("##TimestepUnits", &simulation->timestep.unitIndex, simulation->timestep.unitData.timeUnits, IM_ARRAYSIZE(simulation->timestep.unitData.timeUnits));
-		{
-
-		}
+		UnitCombo<UnitType::Time>("##TimestepUnits", &simulation->timestep);
 		ImGui::PopItemWidth();
+
 		ImGui::AlignFirstTextHeightToWidgets();
 		ImGui::Text("Total Time"); ImGui::SameLine();
 		ImGui::PushItemWidth(200);
 		ImGui::InputFloat("##Total Time", &simulation->totalTime.value, 0.01f); ImGui::SameLine();
 		ImGui::PushItemWidth(80);
-		ImGui::Combo("##TotalTimeUnits", &simulation->totalTime.unitIndex, simulation->totalTime.unitData.timeUnits, IM_ARRAYSIZE(simulation->totalTime.unitData.timeUnits));
-		{
-
-		}
+		UnitCombo<UnitType::Time>("##TotalTimeUnits", &simulation->totalTime);
 		ImGui::PopItemWidth();
 
-		int totalTimesteps = round(simulation->totalTime.GetConvertedValue() / simulation->timestep.GetConvertedValue());
+		int totalTimesteps = round(simulation->totalTime.GetBaseValue() / simulation->timestep.GetBaseValue());
 		ImGui::BeginChild("ObjectContainer", ImVec2(ImGui::GetWindowContentRegionWidth(), 200), false);
 
 		ImGui::PushItemWidth(300);
@@ -640,15 +684,27 @@ void ShowMainUi(Simulation* simulation, std::vector<std::vector<GLfloat> > * lin
 			{
 				ImGui::AlignFirstTextHeightToWidgets();
 				ImGui::Text("Mass    "); ImGui::SameLine();
-				InputScientific(("##Mass " + currentObject.name).c_str(), &simulation->computedData[simulation->dataIndex][i].mass.value);
+				InputScientific(("##Mass" + currentObject.name).c_str(), &simulation->computedData[simulation->dataIndex][i].mass.value);
+				
+				ImGui::SameLine(); ImGui::PushItemWidth(120);
+				UnitCombo<UnitType::Mass>("##Mass" + currentObject.name,&simulation->computedData[simulation->dataIndex][i].mass);
+				ImGui::PopItemWidth();
 
 				ImGui::AlignFirstTextHeightToWidgets();
 				ImGui::Text("Position"); ImGui::SameLine();
 				ImGui::InputFloat3(("##Position " + currentObject.name).c_str(), &simulation->computedData[simulation->dataIndex][i].position.value[0]);
+				
+				ImGui::SameLine(); ImGui::PushItemWidth(120);
+				UnitCombo3<UnitType::Position>("##PositionUnits" + currentObject.name, &simulation->computedData[simulation->dataIndex][i].position);
+				ImGui::PopItemWidth();
 
 				ImGui::AlignFirstTextHeightToWidgets();
 				ImGui::Text("Velocity"); ImGui::SameLine();
 				ImGui::InputFloat3(("##Velocity " + currentObject.name).c_str(), &simulation->computedData[simulation->dataIndex][i].velocity.value[0]);
+				
+				ImGui::SameLine(); ImGui::PushItemWidth(120);
+				UnitCombo3<UnitType::Velocity>("##VelocityUnits" + currentObject.name, &simulation->computedData[simulation->dataIndex][i].velocity);
+				ImGui::PopItemWidth();
 			}
 		}
 		ImGui::EndChild();
@@ -658,6 +714,7 @@ void ShowMainUi(Simulation* simulation, std::vector<std::vector<GLfloat> > * lin
 			imguiStatus->isPaused = true;
 
 			simulation->temporaryData = simulation->computedData;
+
 			simulation->temporaryIndex = simulation->dataIndex;
 
 			std::vector<SimulationObject> currentFrame = simulation->getCurrentObjects();
@@ -666,9 +723,9 @@ void ShowMainUi(Simulation* simulation, std::vector<std::vector<GLfloat> > * lin
 			*lines = {};
 			for (int i = 0; i < simulation->getCurrentObjects().size(); i++) {
 				lines->push_back({
-					currentFrame[i].position.value[0],
-					currentFrame[i].position.value[1],
-					currentFrame[i].position.value[2],
+					currentFrame[i].position.GetBaseValue(0),
+					currentFrame[i].position.GetBaseValue(1),
+					currentFrame[i].position.GetBaseValue(2),
 					simulation->objectSettings[i].color[0],
 					simulation->objectSettings[i].color[1],
 					simulation->objectSettings[i].color[2]
@@ -686,13 +743,13 @@ void ShowMainUi(Simulation* simulation, std::vector<std::vector<GLfloat> > * lin
 			if (simulation->dataIndex + 1 > totalTimesteps)
 				ImGui::CloseCurrentPopup();
 			else {
-				simulation->step(simulation->timestep.GetConvertedValue());
+				simulation->step(simulation->timestep.GetBaseValue());
 
 				std::vector<SimulationObject> currentFrame = simulation->getCurrentObjects();
 				for (int i = 0; i < currentFrame.size(); i++) {
-					(*lines)[i].push_back(currentFrame[i].position.value[0]);
-					(*lines)[i].push_back(currentFrame[i].position.value[1]);
-					(*lines)[i].push_back(currentFrame[i].position.value[2]);
+					(*lines)[i].push_back(currentFrame[i].position.GetBaseValue(0));
+					(*lines)[i].push_back(currentFrame[i].position.GetBaseValue(1));
+					(*lines)[i].push_back(currentFrame[i].position.GetBaseValue(2));
 
 					(*lines)[i].push_back(simulation->objectSettings[i].color[0]);
 					(*lines)[i].push_back(simulation->objectSettings[i].color[1]);

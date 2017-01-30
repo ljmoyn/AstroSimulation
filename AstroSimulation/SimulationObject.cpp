@@ -1,7 +1,7 @@
 #include "SimulationObject.h"
 
 SimulationObject::SimulationObject(std::string Name, float Mass, float Position[3], float Velocity[3])
-	: name(Name), mass(Mass, 0), position(Position, 0), velocity(Velocity, 0){}
+	: name(Name), mass(Mass, 0), position(Position, 2), velocity(Velocity, 4){}
 
 SimulationObject::~SimulationObject()
 {

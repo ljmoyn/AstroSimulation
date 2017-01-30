@@ -11,6 +11,7 @@
 #include <iostream>
 #include <vector>
 #include <string>
+#include <map>
 
 #define VELOCITY_VERLET 0
 #define RUNGE_KUTTA 1
@@ -28,6 +29,9 @@ public:
 	std::vector<SimulationObject> getCurrentObjects();
 	static void FromXml(Simulation* simulation, std::string filename);
 	static void ToXml(Simulation simulation, std::string filename);
+
+	static std::vector<std::map<std::string, int> > ConvertObjectsToBaseUnits(std::vector<SimulationObject>* objects);
+	static void ConvertObjectsToUnits(std::vector<SimulationObject>* objects, std::vector<std::map<std::string, int> > units);
 
 	//keep objects and objectSettings as separate objects, because I want 
 	//SimulationObject to contain only the fundamental object data, rather than
