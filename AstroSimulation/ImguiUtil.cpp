@@ -684,7 +684,8 @@ void ShowMainUi(Simulation* simulation, std::vector<std::vector<GLfloat> > * lin
 				ImGui::Text("Mass    "); ImGui::SameLine();
 				bool massChanged = InputScientific(("##Mass" + currentObject.name).c_str(), &simulation->computedData[simulation->dataIndex][i].mass.value);
 				
-				ImGui::SameLine(); ImGui::PushItemWidth(120);
+				//default spacing between units and entry boxes is inconsistent form some reason, so have to hardcode position on the line. Sad.
+				ImGui::SameLine(370.0f); ImGui::PushItemWidth(120);
 				bool massUnitsChanged = UnitCombo<UnitType::Mass>("##Mass" + currentObject.name,&simulation->computedData[simulation->dataIndex][i].mass);
 				ImGui::PopItemWidth();
 
@@ -692,7 +693,7 @@ void ShowMainUi(Simulation* simulation, std::vector<std::vector<GLfloat> > * lin
 				ImGui::Text("Position"); ImGui::SameLine();
 				bool positionChanged = ImGui::InputFloat3(("##Position " + currentObject.name).c_str(), &simulation->computedData[simulation->dataIndex][i].position.value[0]);
 				
-				ImGui::SameLine(); ImGui::PushItemWidth(120);
+				ImGui::SameLine(370.0f); ImGui::PushItemWidth(120);
 				bool positionUnitsChanged = UnitCombo3<UnitType::Position>("##PositionUnits" + currentObject.name, &simulation->computedData[simulation->dataIndex][i].position);
 				ImGui::PopItemWidth();
 
@@ -700,7 +701,7 @@ void ShowMainUi(Simulation* simulation, std::vector<std::vector<GLfloat> > * lin
 				ImGui::Text("Velocity"); ImGui::SameLine();
 				bool velocityChanged = ImGui::InputFloat3(("##Velocity " + currentObject.name).c_str(), &simulation->computedData[simulation->dataIndex][i].velocity.value[0]);
 				
-				ImGui::SameLine(); ImGui::PushItemWidth(120);
+				ImGui::SameLine(370.0f); ImGui::PushItemWidth(120);
 				bool velocityUnitsChanged = UnitCombo3<UnitType::Velocity>("##VelocityUnits" + currentObject.name, &simulation->computedData[simulation->dataIndex][i].velocity);
 				ImGui::PopItemWidth();
 
