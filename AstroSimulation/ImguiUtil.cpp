@@ -470,7 +470,7 @@ T clip(const T& n, const T& lower, const T& upper) {
 }
 
 template <UnitType type>
-void UnitCombo(std::string id, ValueWithUnits<type>* value) {
+bool UnitCombo(std::string id, ValueWithUnits<type>* value) {
 	bool changed = false;
 	int units = value->unitIndex;
 	switch (type)
@@ -488,15 +488,14 @@ void UnitCombo(std::string id, ValueWithUnits<type>* value) {
 		changed = ImGui::Combo(id.c_str(), &units, value->unitData.timeUnits, IM_ARRAYSIZE(value->unitData.timeUnits));
 		break;
 	}
-	if (changed) {
-		value->SetBaseUnits();
+	if (changed)
 		value->ConvertToUnits(units);
-		value->unitIndex = units;
-	}
+
+	return changed;
 }
 
 template <UnitType type>
-void UnitCombo3(std::string id, ValueWithUnits3<type>* value) {
+bool UnitCombo3(std::string id, ValueWithUnits3<type>* value) {
 	bool changed = false;
 	int units = value->unitIndex;
 	switch (type)
@@ -514,11 +513,10 @@ void UnitCombo3(std::string id, ValueWithUnits3<type>* value) {
 		changed = ImGui::Combo(id.c_str(), &units, value->unitData.timeUnits, IM_ARRAYSIZE(value->unitData.timeUnits));
 		break;
 	}
-	if (changed) {
-		value->SetBaseUnits();
+	if (changed)
 		value->ConvertToUnits(units);
-		value->unitIndex = units;
-	}
+
+	return changed;
 }
 
 #define IM_ARRAYSIZE(_ARR)  ((int)(sizeof(_ARR)/sizeof(*_ARR)))
@@ -684,27 +682,49 @@ void ShowMainUi(Simulation* simulation, std::vector<std::vector<GLfloat> > * lin
 			{
 				ImGui::AlignFirstTextHeightToWidgets();
 				ImGui::Text("Mass    "); ImGui::SameLine();
-				InputScientific(("##Mass" + currentObject.name).c_str(), &simulation->computedData[simulation->dataIndex][i].mass.value);
+				bool massChanged = InputScientific(("##Mass" + currentObject.name).c_str(), &simulation->computedData[simulation->dataIndex][i].mass.value);
 				
 				ImGui::SameLine(); ImGui::PushItemWidth(120);
-				UnitCombo<UnitType::Mass>("##Mass" + currentObject.name,&simulation->computedData[simulation->dataIndex][i].mass);
+				bool massUnitsChanged = UnitCombo<UnitType::Mass>("##Mass" + currentObject.name,&simulation->computedData[simulation->dataIndex][i].mass);
 				ImGui::PopItemWidth();
 
 				ImGui::AlignFirstTextHeightToWidgets();
 				ImGui::Text("Position"); ImGui::SameLine();
-				ImGui::InputFloat3(("##Position " + currentObject.name).c_str(), &simulation->computedData[simulation->dataIndex][i].position.value[0]);
+				bool positionChanged = ImGui::InputFloat3(("##Position " + currentObject.name).c_str(), &simulation->computedData[simulation->dataIndex][i].position.value[0]);
 				
 				ImGui::SameLine(); ImGui::PushItemWidth(120);
-				UnitCombo3<UnitType::Position>("##PositionUnits" + currentObject.name, &simulation->computedData[simulation->dataIndex][i].position);
+				bool positionUnitsChanged = UnitCombo3<UnitType::Position>("##PositionUnits" + currentObject.name, &simulation->computedData[simulation->dataIndex][i].position);
 				ImGui::PopItemWidth();
 
 				ImGui::AlignFirstTextHeightToWidgets();
 				ImGui::Text("Velocity"); ImGui::SameLine();
-				ImGui::InputFloat3(("##Velocity " + currentObject.name).c_str(), &simulation->computedData[simulation->dataIndex][i].velocity.value[0]);
+				bool velocityChanged = ImGui::InputFloat3(("##Velocity " + currentObject.name).c_str(), &simulation->computedData[simulation->dataIndex][i].velocity.value[0]);
 				
 				ImGui::SameLine(); ImGui::PushItemWidth(120);
-				UnitCombo3<UnitType::Velocity>("##VelocityUnits" + currentObject.name, &simulation->computedData[simulation->dataIndex][i].velocity);
+				bool velocityUnitsChanged = UnitCombo3<UnitType::Velocity>("##VelocityUnits" + currentObject.name, &simulation->computedData[simulation->dataIndex][i].velocity);
 				ImGui::PopItemWidth();
+
+				if (!imguiStatus->isPaused && (massChanged || positionChanged || velocityChanged))
+					imguiStatus->isPaused = true;
+
+				if (massUnitsChanged || positionUnitsChanged || velocityUnitsChanged) {
+					for (int j = 0; j < simulation->computedData.size(); j++) {				
+						if (massUnitsChanged) {
+							int newMassUnit = simulation->computedData[simulation->dataIndex][i].mass.unitIndex;
+							simulation->computedData[j][i].mass.ConvertToUnits(newMassUnit);
+						}
+
+						if (positionUnitsChanged) {
+							int newPositionUnit = simulation->computedData[simulation->dataIndex][i].position.unitIndex;
+							simulation->computedData[j][i].position.ConvertToUnits(newPositionUnit);
+						}
+
+						if (velocityUnitsChanged) {
+							int newVelocityUnit = simulation->computedData[simulation->dataIndex][i].velocity.unitIndex;
+							simulation->computedData[j][i].velocity.ConvertToUnits(newVelocityUnit);
+						}
+					}
+				}
 			}
 		}
 		ImGui::EndChild();

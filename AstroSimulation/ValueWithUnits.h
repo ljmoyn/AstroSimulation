@@ -12,15 +12,16 @@ struct UnitData {
 	const float timeConversions[5] = { 1.0f, 1.0f / 12.0f, 1.0f / 365.0f, 1.0f / (365.0f * 24.0f), 1.0f / (365.0f * 24.0f * 60.0f) };
 
 	const char* massUnits[4] = { "Kg", "Lbs", "Earth Mass", "Solar Mass" };
-	const float massConversions[4] = { 1.0f,
-		0.45359237f, //lbs
+	const float massConversions[4] = { 
+		1.0f, //Kg
+		0.45359237f, // convert lbs -----> Kg
 		5.972f * powf(10,24), // earth mass
 		1.989f * powf(10,30) //solar mass
 	};
 
 	const char* positionUnits[8] = { "M", "Km", "GigaMeters", "Mi", "AU", "Light Seconds", "Light Minutes", "Light Years" };
 	const float positionConversions[8] = { 
-		1.0f / powf(10,9), //M
+		1.0f / powf(10,9), //convert M -----> Gm
 		1.0f / powf(10,6), //Km
 		1.0f, // Gm
 		1.60934f * powf(10,-6), // Mi
@@ -32,12 +33,12 @@ struct UnitData {
 
 	const char* velocityUnits[6] = { "M/s", "Km/s", "Km/Hr", "Mi/Hr", "GM / Year", "c" };
 	const float velocityConversions[6] = {
-		31.7098f, //M / s
-		0.0317098f, //Km / s
-		114.155f, // Km / hr
-		70.9326284499f, //Mi/Hr
+		60.0f * 60.0f * 24.0f * 365.0f / powf(10,9), //convert M / s -----> Gm / yr
+		60.0f * 60.0f * 24.0f * 365.0f / powf(10,6), //Km / s
+		24.0f * 365.0f / powf(10,6), // Km / hr
+		24.0f * 365.0f / (.621371f * powf(10,6)), //Mi/Hr
 		1.0f, // Gm / Yr
-		9460528.4f, //c
+		2.99792458f * powf(10,8) * 60.0f * 60.0f * 24.0f * 365.0f / powf(10,9), //c
 	};
 };
 

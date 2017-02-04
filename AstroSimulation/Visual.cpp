@@ -62,9 +62,9 @@ void Visual::drawVertices() {
 	std::vector<GLfloat> vertices = {};
 	std::vector<SimulationObject> objects = simulation.getCurrentObjects();
 	for (int i = 0; i < objects.size(); i++) {
-		vertices.push_back(objects[i].position.value[0]);
-		vertices.push_back(objects[i].position.value[1]);
-		vertices.push_back(objects[i].position.value[2]);
+		vertices.push_back(objects[i].position.GetBaseValue(0));
+		vertices.push_back(objects[i].position.GetBaseValue(1));
+		vertices.push_back(objects[i].position.GetBaseValue(2));
 
 		vertices.push_back(simulation.objectSettings[i].color[0]);
 		vertices.push_back(simulation.objectSettings[i].color[1]);
