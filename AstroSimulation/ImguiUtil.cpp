@@ -453,7 +453,7 @@ bool InputScalarScientific(const char* label, ImGuiDataType data_type, void* dat
 }
 
 //https://github.com/ocornut/imgui/issues/648
-bool InputScientific(const char* label, float* v, const char *display_format = "%.3g", ImGuiInputTextFlags extra_flags = 0)
+bool InputScientific(const char* label, float* v, const char *display_format, ImGuiInputTextFlags extra_flags)
 {
 	return InputScalarScientific(label, ImGuiDataType_Float, (void*)v, display_format, extra_flags);
 }
@@ -519,29 +519,17 @@ bool UnitCombo3(std::string id, ValueWithUnits3<type>* value) {
 	return changed;
 }
 
-#define IM_ARRAYSIZE(_ARR)  ((int)(sizeof(_ARR)/sizeof(*_ARR)))
-void ShowMainUi(Simulation* simulation, std::vector<std::vector<GLfloat> > * lines, Camera* camera, ImguiStatus* imguiStatus)
+// Demonstrate creating a simple static window with no decoration.
+void TopLeftOverlay(Simulation simulation)
 {
-	ImGuiWindowFlags window_flags = 0;
-	window_flags |= ImGuiWindowFlags_ShowBorders;
+	ImGui::SetNextWindowPos(ImVec2(5, 20));
+	ImGui::Begin("TopLeftOverlay", NULL, ImVec2(0, 0), 0.3f, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoSavedSettings);
+	ImGui::Text(("Time: " + std::to_string(simulation.time)).c_str());
+	ImGui::Text("Average FPS: %.3f", ImGui::GetIO().Framerate);
+	ImGui::End();
+}
 
-	ImGuiStyle& style = ImGui::GetStyle();
-	style.Colors[ImGuiCol_PopupBg] = ImVec4(0.05f, 0.05f, 0.10f, 1.00f);
-	style.Colors[ImGuiCol_Border] = ImVec4{ 255,255,255,255 };
-
-	if (ImGui::BeginMainMenuBar())
-	{
-		if (ImGui::BeginMenu("File"))
-		{
-			if (ImGui::MenuItem("Save As..."))
-				imguiStatus->showSavePopup = true;
-			if (ImGui::MenuItem("Load")) 
-				imguiStatus->showLoadPopup = true;
-
-			ImGui::EndMenu();
-		}
-		ImGui::EndMainMenuBar();
-	}
+void LoadPopup(Simulation* simulation, ImguiStatus* imguiStatus) {
 	//would be nicer if I could put OpenPopup inside the menu item, and get rid of showLoadPopup. Unfortunately, OpenPopup only works if it is on the same level as BeginPopupModal. 
 	//I can't put BeginPopupModal inside the menu, because it would then only show up if the menu is open (which is not the case after you click a menu item)
 	//https://github.com/ocornut/imgui/issues/331
@@ -551,7 +539,7 @@ void ShowMainUi(Simulation* simulation, std::vector<std::vector<GLfloat> > * lin
 	}
 
 	if (ImGui::BeginPopupModal("Load Scenario"))
-	{			
+	{
 		ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(3, 12));
 		std::vector<std::string> invalidFiles = {};
 
@@ -576,7 +564,7 @@ void ShowMainUi(Simulation* simulation, std::vector<std::vector<GLfloat> > * lin
 			}
 		}
 
-		if (!invalidFiles.empty()) 
+		if (!invalidFiles.empty())
 		{
 			if (ImGui::CollapsingHeader("Invalid Files"))
 			{
@@ -605,7 +593,9 @@ void ShowMainUi(Simulation* simulation, std::vector<std::vector<GLfloat> > * lin
 		ImGui::PopStyleVar();
 		ImGui::EndPopup();
 	}
+}
 
+void SavePopup(Simulation* simulation, ImguiStatus* imguiStatus) {
 	if (imguiStatus->showSavePopup)
 	{
 		ImGui::OpenPopup("Save");
@@ -634,6 +624,45 @@ void ShowMainUi(Simulation* simulation, std::vector<std::vector<GLfloat> > * lin
 
 		ImGui::EndPopup();
 	}
+}
+
+void MenuBar(Simulation* simulation, ImguiStatus* imguiStatus) {
+	if (ImGui::BeginMainMenuBar())
+	{
+		if (ImGui::BeginMenu("File"))
+		{
+			if (ImGui::MenuItem("Save As..."))
+				imguiStatus->showSavePopup = true;
+			if (ImGui::MenuItem("Load"))
+				imguiStatus->showLoadPopup = true;
+
+			ImGui::EndMenu();
+		}
+		if (ImGui::BeginMenu("View"))
+		{
+			ImGui::MenuItem("Top Left Overlay", NULL, &imguiStatus->showTopLeftOverlay);
+			ImGui::EndMenu();
+		}
+		ImGui::EndMainMenuBar();
+	}
+
+	LoadPopup(simulation, imguiStatus);
+	SavePopup(simulation, imguiStatus);
+}
+
+void ShowMainUi(Simulation* simulation, std::vector<std::vector<GLfloat> > * lines, Camera* camera, ImguiStatus* imguiStatus)
+{
+	ImGuiWindowFlags window_flags = 0;
+	window_flags |= ImGuiWindowFlags_ShowBorders;
+
+	ImGuiStyle& style = ImGui::GetStyle();
+	style.Colors[ImGuiCol_PopupBg] = ImVec4(0.05f, 0.05f, 0.10f, 1.00f);
+	style.Colors[ImGuiCol_Border] = ImVec4{ 255,255,255,255 };
+
+	MenuBar(simulation, imguiStatus);
+
+	if (imguiStatus->showTopLeftOverlay)
+		TopLeftOverlay(*simulation);
 
 	ImGui::SetNextWindowSize(ImVec2(500, 680), ImGuiSetCond_FirstUseEver);
 	if (!ImGui::Begin("Simulation Controls", &imguiStatus->showMainWindow, window_flags))
@@ -673,8 +702,6 @@ void ShowMainUi(Simulation* simulation, std::vector<std::vector<GLfloat> > * lin
 		ImGui::PopItemWidth();
 
 		int totalTimesteps = round(simulation->totalTime.GetBaseValue() / simulation->timestep.GetBaseValue());
-		ImGui::BeginChild("ObjectContainer", ImVec2(ImGui::GetWindowContentRegionWidth(), 200), false);
-
 		ImGui::PushItemWidth(300);
 		for (int i = 0; i < simulation->getCurrentObjects().size(); i++) {
 			SimulationObject currentObject = simulation->computedData[simulation->dataIndex][i];
@@ -685,7 +712,7 @@ void ShowMainUi(Simulation* simulation, std::vector<std::vector<GLfloat> > * lin
 				bool massChanged = InputScientific(("##Mass" + currentObject.name).c_str(), &simulation->computedData[simulation->dataIndex][i].mass.value);
 				
 				//default spacing between units and entry boxes is inconsistent form some reason, so have to hardcode position on the line. Sad.
-				ImGui::SameLine(370.0f); ImGui::PushItemWidth(120);
+				ImGui::SameLine(375.0f); ImGui::PushItemWidth(120);
 				bool massUnitsChanged = UnitCombo<UnitType::Mass>("##Mass" + currentObject.name,&simulation->computedData[simulation->dataIndex][i].mass);
 				ImGui::PopItemWidth();
 
@@ -693,7 +720,7 @@ void ShowMainUi(Simulation* simulation, std::vector<std::vector<GLfloat> > * lin
 				ImGui::Text("Position"); ImGui::SameLine();
 				bool positionChanged = ImGui::InputFloat3(("##Position " + currentObject.name).c_str(), &simulation->computedData[simulation->dataIndex][i].position.value[0]);
 				
-				ImGui::SameLine(370.0f); ImGui::PushItemWidth(120);
+				ImGui::SameLine(375.0f); ImGui::PushItemWidth(120);
 				bool positionUnitsChanged = UnitCombo3<UnitType::Position>("##PositionUnits" + currentObject.name, &simulation->computedData[simulation->dataIndex][i].position);
 				ImGui::PopItemWidth();
 
@@ -701,7 +728,7 @@ void ShowMainUi(Simulation* simulation, std::vector<std::vector<GLfloat> > * lin
 				ImGui::Text("Velocity"); ImGui::SameLine();
 				bool velocityChanged = ImGui::InputFloat3(("##Velocity " + currentObject.name).c_str(), &simulation->computedData[simulation->dataIndex][i].velocity.value[0]);
 				
-				ImGui::SameLine(370.0f); ImGui::PushItemWidth(120);
+				ImGui::SameLine(375.0f); ImGui::PushItemWidth(120);
 				bool velocityUnitsChanged = UnitCombo3<UnitType::Velocity>("##VelocityUnits" + currentObject.name, &simulation->computedData[simulation->dataIndex][i].velocity);
 				ImGui::PopItemWidth();
 
@@ -728,7 +755,6 @@ void ShowMainUi(Simulation* simulation, std::vector<std::vector<GLfloat> > * lin
 				}
 			}
 		}
-		ImGui::EndChild();
 
 		if (ImGui::Button("Compute", ImVec2(ImGui::GetWindowContentRegionWidth(), 30)))
 		{

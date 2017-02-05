@@ -41,6 +41,8 @@ struct ImguiStatus {
 	std::vector<std::string> saveFiles;
 	std::vector<bool> selected;
 
+	bool showTopLeftOverlay = true;
+
 	//http://stackoverflow.com/questions/612097/how-can-i-get-the-list-of-files-in-a-directory-using-c-or-c
 	//windows specific
 	std::vector<std::string> GetAllFilesInFolder(std::string folderPath)
@@ -63,7 +65,18 @@ struct ImguiStatus {
 	}
 };
 
-//IMGUI_API bool        InputScientific(const char* label, float* v, const char *display_format = "%.3g", ImGuiInputTextFlags extra_flags = 0);
-IMGUI_API void        ShowMainUi(Simulation* simulation, std::vector<std::vector<GLfloat>> * lines, Camera* camera, ImguiStatus* imguiStatus);
+#define IM_ARRAYSIZE(_ARR)  ((int)(sizeof(_ARR)/sizeof(*_ARR)))
+
+// Menus / Windows
+IMGUI_API void ShowMainUi(Simulation* simulation, std::vector<std::vector<GLfloat>> * lines, Camera* camera, ImguiStatus* imguiStatus);
+IMGUI_API void MenuBar(Simulation* simulation, ImguiStatus* imguiStatus);
+IMGUI_API void TopLeftOverlay(Simulation simulation);
+IMGUI_API void LoadPopup(Simulation* simulation, ImguiStatus* imguiStatus);
+IMGUI_API void SavePopup(Simulation* simulation, ImguiStatus* imguiStatus);
+
+// Widgets
+IMGUI_API bool InputScientific(const char* label, float* v, const char *display_format = "%.3g", ImGuiInputTextFlags extra_flags = 0);
+IMGUI_API template <UnitType type> bool UnitCombo(std::string id, ValueWithUnits<type>* value);
+IMGUI_API template <UnitType type> bool UnitCombo3(std::string id, ValueWithUnits3<type>* value);
 
 #endif
