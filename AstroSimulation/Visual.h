@@ -48,6 +48,7 @@ public:
 	void update(Shader shader);
 	void drawVertices();
 	void drawLines();
+	static void updateLines(Simulation * simulation, std::vector<std::vector<GLfloat> > * lines, bool firstFrame);
 	static void initVisualControls(Visual* visual);
 
 	Simulation simulation;

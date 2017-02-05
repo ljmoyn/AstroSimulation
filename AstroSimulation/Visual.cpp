@@ -62,9 +62,11 @@ void Visual::drawVertices() {
 	std::vector<GLfloat> vertices = {};
 	std::vector<SimulationObject> objects = simulation.getCurrentObjects();
 	for (int i = 0; i < objects.size(); i++) {
-		vertices.push_back(objects[i].position.GetBaseValue(0));
-		vertices.push_back(objects[i].position.GetBaseValue(1));
-		vertices.push_back(objects[i].position.GetBaseValue(2));
+		std::vector<float> offsets = simulation.GetFocusOffsets(objects);
+
+		vertices.push_back(objects[i].position.GetBaseValue(0) - offsets[0]);
+		vertices.push_back(objects[i].position.GetBaseValue(1) - offsets[1]);
+		vertices.push_back(objects[i].position.GetBaseValue(2) - offsets[2]);
 
 		vertices.push_back(simulation.objectSettings[i].color[0]);
 		vertices.push_back(simulation.objectSettings[i].color[1]);
@@ -92,6 +94,39 @@ void Visual::drawVertices() {
 
 	glDeleteVertexArrays(1, &VAO);
 	glDeleteBuffers(1, &VBO);
+}
+
+void Visual::updateLines(Simulation * simulation, std::vector<std::vector<GLfloat> > * lines, bool firstFrame) {
+	std::vector<SimulationObject> currentObjects = simulation->getCurrentObjects();
+	if (firstFrame) {
+		*lines = {};
+		for (int i = 0; i < simulation->getCurrentObjects().size(); i++) {
+			std::vector<float> offsets = simulation->GetFocusOffsets(currentObjects);
+
+			lines->push_back({
+				currentObjects[i].position.GetBaseValue(0) - offsets[0],
+				currentObjects[i].position.GetBaseValue(1) - offsets[1],
+				currentObjects[i].position.GetBaseValue(2) - offsets[2],
+				simulation->objectSettings[i].color[0],
+				simulation->objectSettings[i].color[1],
+				simulation->objectSettings[i].color[2]
+			});
+		}
+
+	}
+	else {
+		for (int i = 0; i < currentObjects.size(); i++) {
+			std::vector<float> offsets = simulation->GetFocusOffsets(currentObjects);
+
+			(*lines)[i].push_back(currentObjects[i].position.GetBaseValue(0) - offsets[0]);
+			(*lines)[i].push_back(currentObjects[i].position.GetBaseValue(1) - offsets[1]);
+			(*lines)[i].push_back(currentObjects[i].position.GetBaseValue(2) - offsets[2]);
+
+			(*lines)[i].push_back(simulation->objectSettings[i].color[0]);
+			(*lines)[i].push_back(simulation->objectSettings[i].color[1]);
+			(*lines)[i].push_back(simulation->objectSettings[i].color[2]);
+		}
+	}
 }
 
 void Visual::drawLines() {

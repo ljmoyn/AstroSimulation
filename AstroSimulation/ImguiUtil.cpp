@@ -767,18 +767,7 @@ void ShowMainUi(Simulation* simulation, std::vector<std::vector<GLfloat> > * lin
 			std::vector<SimulationObject> currentFrame = simulation->getCurrentObjects();
 			simulation->computedData = { currentFrame };
 			simulation->dataIndex = 0;
-			*lines = {};
-			for (int i = 0; i < simulation->getCurrentObjects().size(); i++) {
-				lines->push_back({
-					currentFrame[i].position.GetBaseValue(0),
-					currentFrame[i].position.GetBaseValue(1),
-					currentFrame[i].position.GetBaseValue(2),
-					simulation->objectSettings[i].color[0],
-					simulation->objectSettings[i].color[1],
-					simulation->objectSettings[i].color[2]
-				});
-			}
-
+			Visual::updateLines(simulation, lines, true);
 
 			ImGui::SetNextWindowSize(ImVec2(300, 100), ImGuiSetCond_FirstUseEver);
 			ImGui::OpenPopup("Computing timesteps...");
@@ -791,18 +780,7 @@ void ShowMainUi(Simulation* simulation, std::vector<std::vector<GLfloat> > * lin
 				ImGui::CloseCurrentPopup();
 			else {
 				simulation->step(simulation->timestep.GetBaseValue());
-
-				std::vector<SimulationObject> currentFrame = simulation->getCurrentObjects();
-				for (int i = 0; i < currentFrame.size(); i++) {
-					(*lines)[i].push_back(currentFrame[i].position.GetBaseValue(0));
-					(*lines)[i].push_back(currentFrame[i].position.GetBaseValue(1));
-					(*lines)[i].push_back(currentFrame[i].position.GetBaseValue(2));
-
-					(*lines)[i].push_back(simulation->objectSettings[i].color[0]);
-					(*lines)[i].push_back(simulation->objectSettings[i].color[1]);
-					(*lines)[i].push_back(simulation->objectSettings[i].color[2]);
-
-				}
+				Visual::updateLines(simulation, lines, false);
 			}
 			sprintf_s(progressString, "%d/%d", simulation->dataIndex + 1, totalTimesteps);
 
@@ -823,6 +801,22 @@ void ShowMainUi(Simulation* simulation, std::vector<std::vector<GLfloat> > * lin
 	}
 	if (ImGui::CollapsingHeader("Playback", treeFlags))
 	{
+		ImGui::AlignFirstTextHeightToWidgets();
+		ImGui::Text("Object Focus  "); ImGui::SameLine();
+		ImGui::PushItemWidth(-1);
+		std::vector<SimulationObject> currentObjects = simulation->getCurrentObjects();
+		std::vector<std::string> names = simulation->GetObjectNames();
+
+		if (ImGui::Combo("##ObjectFocus", &simulation->objectFocus, vector_getter, static_cast<void*>(&names), names.size())) 
+		{
+			int originalIndex = simulation->dataIndex;
+
+			for (simulation->dataIndex = 0; simulation->dataIndex < simulation->computedData.size(); simulation->dataIndex++)
+				Visual::updateLines(simulation, lines, simulation->dataIndex == 0);
+
+			simulation->dataIndex = originalIndex;
+		}
+
 		ImGui::AlignFirstTextHeightToWidgets();
 		ImGui::Text("Azimuth       "); ImGui::SameLine();
 		ImGui::PushItemWidth(-1);

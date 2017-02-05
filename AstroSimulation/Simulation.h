@@ -33,6 +33,8 @@ public:
 	static std::vector<std::map<std::string, int> > ConvertObjectsToBaseUnits(std::vector<SimulationObject>* objects);
 	static void ConvertObjectsToUnits(std::vector<SimulationObject>* objects, std::vector<std::map<std::string, int> > units);
 
+	std::vector<std::string> GetObjectNames();
+	std::vector<float> GetFocusOffsets(std::vector <SimulationObject> objects);
 	//keep objects and objectSettings as separate objects, because I want 
 	//SimulationObject to contain only the fundamental object data, rather than
 	//get cluttered up with ui info.
@@ -49,6 +51,8 @@ public:
 	int playbackSpeed;
 	int dataIndex;
 	float time;
+
+	int objectFocus;
 
 	int selectedAlgorithm;
 	const char* algorithms[3] = { "Velocity Verlet", "Runge Kutta 4", "RK45 with Adaptive Stepsize" };

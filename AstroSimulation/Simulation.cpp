@@ -46,6 +46,7 @@ void Simulation::FromXml(Simulation *sim, std::string filename)
 
 	sim->computedData = {objects};
 	sim->dataIndex = 0;
+	sim->objectFocus = 0;
 }
 
 void Simulation::ToXml(Simulation simulation, std::string filename) {
@@ -194,4 +195,25 @@ void Simulation::velocityVerlet(float dt) {
 
 	computedData.push_back(currentObjects);
 	dataIndex++;
+}
+
+std::vector<std::string> Simulation::GetObjectNames() {
+	std::vector<SimulationObject> currentObjects = getCurrentObjects();
+	std::vector<std::string> names = { "None" };
+	for (int i = 0; i < currentObjects.size(); i++) {
+		names.push_back(currentObjects[i].name);
+	}
+	return names;
+}
+
+std::vector<float> Simulation::GetFocusOffsets(std::vector <SimulationObject> objects) {
+	float xOffset = 0, yOffset = 0, zOffset = 0;
+	if (objectFocus > 0) {
+		//-1 since the first is "no focus"
+		xOffset = objects[objectFocus-1].position.GetBaseValue(0);
+		yOffset = objects[objectFocus-1].position.GetBaseValue(1);
+		zOffset = objects[objectFocus-1].position.GetBaseValue(2);
+	}
+
+	return{ xOffset, yOffset, zOffset };
 }
