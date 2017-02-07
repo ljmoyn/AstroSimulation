@@ -520,11 +520,11 @@ bool UnitCombo3(std::string id, ValueWithUnits3<type>* value) {
 }
 
 // Demonstrate creating a simple static window with no decoration.
-void TopLeftOverlay(Simulation simulation)
+void TopLeftOverlay(Simulation* simulation)
 {
 	ImGui::SetNextWindowPos(ImVec2(5, 20));
 	ImGui::Begin("TopLeftOverlay", NULL, ImVec2(0, 0), 0.3f, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoSavedSettings);
-	ImGui::Text(("Time: " + std::to_string(simulation.time)).c_str());
+	ImGui::Text(("Time: " + std::to_string(simulation->time)).c_str());
 	ImGui::Text("Average FPS: %.3f", ImGui::GetIO().Framerate);
 	ImGui::End();
 }
@@ -662,7 +662,7 @@ void ShowMainUi(Simulation* simulation, std::vector<std::vector<GLfloat> > * lin
 	MenuBar(simulation, imguiStatus);
 
 	if (imguiStatus->showTopLeftOverlay)
-		TopLeftOverlay(*simulation);
+		TopLeftOverlay(simulation);
 
 	ImGui::SetNextWindowSize(ImVec2(500, 680), ImGuiSetCond_FirstUseEver);
 	if (!ImGui::Begin("Simulation Controls", &imguiStatus->showMainWindow, window_flags))
@@ -820,20 +820,20 @@ void ShowMainUi(Simulation* simulation, std::vector<std::vector<GLfloat> > * lin
 		ImGui::AlignFirstTextHeightToWidgets();
 		ImGui::Text("Azimuth       "); ImGui::SameLine();
 		ImGui::PushItemWidth(-1);
-		ImGui::SliderFloat("##azimuth", &camera->azimuth, -360, 360.0);
-		camera->azimuth = clip(camera->azimuth, -360.0f, 360.0f);
+		if(ImGui::SliderFloat("##azimuth", &camera->azimuth, -360, 360.0))
+			camera->azimuth = clip(camera->azimuth, -360.0f, 360.0f);
 
 		ImGui::AlignFirstTextHeightToWidgets();
 		ImGui::Text("Inclination   "); ImGui::SameLine();
 		ImGui::PushItemWidth(-1);
-		ImGui::SliderFloat("##inclination", &camera->inclination, 0, 90.0);
-		camera->inclination = clip(camera->inclination, 0.0f, 90.0f);
+		if(ImGui::SliderFloat("##inclination", &camera->inclination, 0, 90.0))
+			camera->inclination = clip(camera->inclination, 0.0f, 90.0f);
 
 		ImGui::AlignFirstTextHeightToWidgets();
 		ImGui::Text("Camera Zoom   "); ImGui::SameLine();
 		ImGui::PushItemWidth(-1);
-		ImGui::SliderFloat("##zoom", &camera->Zoom, 0, 45.0);
-		camera->Zoom = clip(camera->Zoom, 0.0f, 45.0f);
+		if(ImGui::SliderFloat("##zoom", &camera->Zoom, 0, 45.0))
+			camera->Zoom = clip(camera->Zoom, 0.0f, 45.0f);
 
 		ImGui::AlignFirstTextHeightToWidgets();
 		ImGui::Text("Playback Speed"); ImGui::SameLine();
@@ -846,8 +846,8 @@ void ShowMainUi(Simulation* simulation, std::vector<std::vector<GLfloat> > * lin
 		}
 		ImGui::SameLine();
 		ImGui::PushItemWidth(-1);
-		ImGui::SliderInt("##playbackSlider", &simulation->dataIndex, 0, simulation->computedData.size() - 1);
-		simulation->dataIndex = clip(simulation->dataIndex, 0, (int)simulation->computedData.size() - 1);
+		if(ImGui::SliderInt("##playbackSlider", &simulation->dataIndex, 0, simulation->computedData.size() - 1))
+			simulation->dataIndex = clip(simulation->dataIndex, 0, (int)simulation->computedData.size() - 1);
 	}
 
 	ImGui::End();
