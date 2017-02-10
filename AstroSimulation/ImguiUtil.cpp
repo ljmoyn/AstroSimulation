@@ -650,7 +650,7 @@ void MenuBar(Simulation* simulation, ImguiStatus* imguiStatus) {
 	SavePopup(simulation, imguiStatus);
 }
 
-void ShowMainUi(Simulation* simulation, std::vector<std::vector<GLfloat> > * lines, Camera* camera, ImguiStatus* imguiStatus)
+void ShowMainUi(Simulation* simulation, std::vector<std::vector<GLfloat> > * lines, Camera* camera, ImguiStatus* imguiStatus, float* xTranslate, float* yTranslate, float* zTranslate)
 {
 	ImGuiWindowFlags window_flags = 0;
 	window_flags |= ImGuiWindowFlags_ShowBorders;
@@ -804,7 +804,6 @@ void ShowMainUi(Simulation* simulation, std::vector<std::vector<GLfloat> > * lin
 		ImGui::AlignFirstTextHeightToWidgets();
 		ImGui::Text("Object Focus  "); ImGui::SameLine();
 		ImGui::PushItemWidth(-1);
-		std::vector<SimulationObject> currentObjects = simulation->getCurrentObjects();
 		std::vector<std::string> names = simulation->GetObjectNames();
 
 		if (ImGui::Combo("##ObjectFocus", &simulation->objectFocus, vector_getter, static_cast<void*>(&names), names.size())) 
@@ -815,6 +814,10 @@ void ShowMainUi(Simulation* simulation, std::vector<std::vector<GLfloat> > * lin
 				Visual::updateLines(simulation, lines, simulation->dataIndex == 0);
 
 			simulation->dataIndex = originalIndex;
+
+			//changing focus, and want to re-center on the new target
+			*xTranslate = 0.0;
+			*yTranslate = 0.0;
 		}
 
 		ImGui::AlignFirstTextHeightToWidgets();
