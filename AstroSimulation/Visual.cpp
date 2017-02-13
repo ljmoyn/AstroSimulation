@@ -33,7 +33,6 @@ Visual::Visual(std::string simulationSource)
 
 	// Setup OpenGL options
 	glEnable(GL_DEPTH_TEST);
-
 	camera = Camera();
 
 	for (int i = 0; i < simulation.getCurrentObjects().size(); i++)
@@ -58,42 +57,93 @@ Visual::~Visual()
 	glfwTerminate();
 }
 
+//http://www.opengl.org.ru/docs/pg/0208.html
+#define X .525731112119133606 
+#define Z .850650808352039932
+
+static GLfloat vdata[12][3] = {
+	{ -X, 0.0, Z },{ X, 0.0, Z },{ -X, 0.0, -Z },{ X, 0.0, -Z },
+	{ 0.0, Z, X },{ 0.0, Z, -X },{ 0.0, -Z, X },{ 0.0, -Z, -X },
+	{ Z, X, 0.0 },{ -Z, X, 0.0 },{ Z, -X, 0.0 },{ -Z, -X, 0.0 }
+};
+static GLuint tindices[20][3] = {
+	{ 0,4,1 },{ 0,9,4 },{ 9,5,4 },{ 4,5,8 },{ 4,8,1 },
+	{ 8,10,1 },{ 8,3,10 },{ 5,3,8 },{ 5,2,3 },{ 2,7,3 },
+	{ 7,10,3 },{ 7,6,10 },{ 7,11,6 },{ 11,0,6 },{ 0,1,6 },
+	{ 6,1,10 },{ 9,0,11 },{ 9,11,2 },{ 9,2,5 },{ 7,2,11 } };
+
 void Visual::drawVertices() {
-	std::vector<GLfloat> vertices = {};
 	std::vector<SimulationObject> objects = simulation.getCurrentObjects();
 	for (int i = 0; i < objects.size(); i++) {
+
 		std::vector<float> offsets = simulation.GetFocusOffsets(objects);
+		GLfloat vertices[72];
+		int k = 0;
+		for (int j = 0; j < 12; j++) {
+			vertices[k] = 800.0f * (objects[i].position.GetBaseValue(0) - offsets[0] + vdata[j][0]);
+			vertices[k + 1] = 800.0f * (objects[i].position.GetBaseValue(1) - offsets[1] + vdata[j][1]);
+			vertices[k + 2] = 800.0f * (objects[i].position.GetBaseValue(2) - offsets[2] + vdata[j][2]);
 
-		vertices.push_back(objects[i].position.GetBaseValue(0) - offsets[0]);
-		vertices.push_back(objects[i].position.GetBaseValue(1) - offsets[1]);
-		vertices.push_back(objects[i].position.GetBaseValue(2) - offsets[2]);
+			vertices[k + 3] = simulation.objectSettings[i].color[0];
+			vertices[k + 4] = simulation.objectSettings[i].color[1];
+			vertices[k + 5] = simulation.objectSettings[i].color[2];
+			k += 6;
+		}
 
-		vertices.push_back(simulation.objectSettings[i].color[0]);
-		vertices.push_back(simulation.objectSettings[i].color[1]);
-		vertices.push_back(simulation.objectSettings[i].color[2]);
+		GLuint indices[60] = {
+			0,4,1,
+			0,9,4,
+			9,5,4,
+			4,5,8,
+			4,8,1,
+			8,10,1,
+			8,3,10,
+			5,3,8,
+			5,2,3,
+			2,7,3,
+			7,10,3,
+			7,6,10,
+			7,11,6,
+			11,0,6,
+			0,1,6,
+			6,1,10,
+			9,0,11,
+			9,11,2,
+			9,2,5,
+			7,2,11
+		};
+
+		glGenVertexArrays(1, &VAO);
+		glGenBuffers(1, &VBO);
+		glGenBuffers(1, &EBO);
+		// Bind the Vertex Array Object first, then bind and set vertex buffer(s) and attribute pointer(s).
+		glBindVertexArray(VAO);
+
+		glBindBuffer(GL_ARRAY_BUFFER, VBO);
+		glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STREAM_DRAW);
+
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+		glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STREAM_DRAW);
+
+		// Position Attribute
+		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(GLfloat), (GLvoid*)0);
+		glEnableVertexAttribArray(0);
+
+		// Color attribute
+		glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(GLfloat), (GLvoid*)(3 * sizeof(GLfloat)));
+		glEnableVertexAttribArray(1);
+
+		glBindBuffer(GL_ARRAY_BUFFER, 0); 
+		glBindVertexArray(0); 
+
+		glBindVertexArray(VAO);
+		glDrawElements(GL_TRIANGLES, 60, GL_UNSIGNED_INT, 0);
+		glBindVertexArray(0);
+
+		glDeleteVertexArrays(1, &VAO);
+		glDeleteBuffers(1, &VBO);
+		glDeleteBuffers(1, &EBO);
 	}
-
-	glGenVertexArrays(1, &VAO);
-	glGenBuffers(1, &VBO);
-
-	glBindVertexArray(VAO);
-
-	glBindBuffer(GL_ARRAY_BUFFER, VBO);
-	glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(GLfloat), &vertices[0], GL_STATIC_DRAW);
-
-	// Position attribute
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(GLfloat), (GLvoid*)0);
-	glEnableVertexAttribArray(0);
-	// Color attribute
-	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(GLfloat), (GLvoid*)(3 * sizeof(GLfloat)));
-	glEnableVertexAttribArray(1);
-
-	glPointSize(2.0);
-	glDrawArrays(GL_POINTS, 0, 6 * simulation.getCurrentObjects().size());
-	glBindVertexArray(0);
-
-	glDeleteVertexArrays(1, &VAO);
-	glDeleteBuffers(1, &VBO);
 }
 
 void Visual::updateLines(Simulation * simulation, std::vector<std::vector<GLfloat> > * lines, bool firstFrame) {
@@ -145,7 +195,7 @@ void Visual::drawLines() {
 		glBindVertexArray(VAO);
 
 		glBindBuffer(GL_ARRAY_BUFFER, VBO);
-		glBufferData(GL_ARRAY_BUFFER, lines[i].size() * sizeof(GLfloat), &lines[i][0], GL_STATIC_DRAW);
+		glBufferData(GL_ARRAY_BUFFER, lines[i].size() * sizeof(GLfloat), &lines[i][0], GL_STREAM_DRAW);
 
 		// Position attribute
 		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(GLfloat), (GLvoid*)0);

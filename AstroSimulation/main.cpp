@@ -1,5 +1,5 @@
 #include "Visual.h"
-// The MAIN function, from here we start the application and run the game loop
+
 int main()
 {
 	Visual visual("..\\saves\\Default.xml");

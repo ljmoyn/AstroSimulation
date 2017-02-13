@@ -63,6 +63,7 @@ private:
 
 	GLuint VBO;
 	GLuint VAO;
+	GLuint EBO;
 
 	double cursorPrevX;
 	double cursorPrevY;
