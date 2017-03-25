@@ -33,6 +33,8 @@
 #include <sstream>
 #include <math.h>
 
+#include "Sphere.h"
+
 class Visual
 {
 public:
@@ -57,6 +59,8 @@ public:
 	ImguiStatus imguiStatus;
 
 	Camera camera;
+	Sphere sphere = Sphere();
+	
 private:
 	GLuint width = 800;
 	GLuint height = 800;

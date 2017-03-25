@@ -129,6 +129,7 @@
     <ClCompile Include="ObjectSettings.cpp" />
     <ClCompile Include="Simulation.cpp" />
     <ClCompile Include="SimulationObject.cpp" />
+    <ClCompile Include="Sphere.cpp" />
     <ClCompile Include="Visual.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -146,6 +147,7 @@
     <ClInclude Include="Shader.h" />
     <ClInclude Include="Simulation.h" />
     <ClInclude Include="SimulationObject.h" />
+    <ClInclude Include="Sphere.h" />
     <ClInclude Include="stb_rect_pack.h" />
     <ClInclude Include="stb_textedit.h" />
     <ClInclude Include="stb_truetype.h" />

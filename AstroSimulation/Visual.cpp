@@ -57,61 +57,23 @@ Visual::~Visual()
 	glfwTerminate();
 }
 
-//http://www.opengl.org.ru/docs/pg/0208.html
-#define X .525731112119133606 
-#define Z .850650808352039932
-
-static GLfloat vdata[12][3] = {
-	{ -X, 0.0, Z },{ X, 0.0, Z },{ -X, 0.0, -Z },{ X, 0.0, -Z },
-	{ 0.0, Z, X },{ 0.0, Z, -X },{ 0.0, -Z, X },{ 0.0, -Z, -X },
-	{ Z, X, 0.0 },{ -Z, X, 0.0 },{ Z, -X, 0.0 },{ -Z, -X, 0.0 }
-};
-static GLuint tindices[20][3] = {
-	{ 0,4,1 },{ 0,9,4 },{ 9,5,4 },{ 4,5,8 },{ 4,8,1 },
-	{ 8,10,1 },{ 8,3,10 },{ 5,3,8 },{ 5,2,3 },{ 2,7,3 },
-	{ 7,10,3 },{ 7,6,10 },{ 7,11,6 },{ 11,0,6 },{ 0,1,6 },
-	{ 6,1,10 },{ 9,0,11 },{ 9,11,2 },{ 9,2,5 },{ 7,2,11 } };
-
 void Visual::drawVertices() {
 	std::vector<SimulationObject> objects = simulation.getCurrentObjects();
+	std::vector<float> offsets = simulation.GetFocusOffsets(objects);
 	for (int i = 0; i < objects.size(); i++) {
 
-		std::vector<float> offsets = simulation.GetFocusOffsets(objects);
-		GLfloat vertices[72];
+		std::vector<GLfloat> vertices(2 * sphere.vertices.size());
 		int k = 0;
-		for (int j = 0; j < 12; j++) {
-			vertices[k] = 800.0f * (objects[i].position.GetBaseValue(0) - offsets[0] + vdata[j][0]);
-			vertices[k + 1] = 800.0f * (objects[i].position.GetBaseValue(1) - offsets[1] + vdata[j][1]);
-			vertices[k + 2] = 800.0f * (objects[i].position.GetBaseValue(2) - offsets[2] + vdata[j][2]);
+		for (int j = 0; j < sphere.vertices.size(); j+=3) {
+			vertices[k] = 1.0f * (objects[i].position.GetBaseValue(0) - offsets[0] + sphere.vertices[j]);
+			vertices[k + 1] = 1.0f * (objects[i].position.GetBaseValue(1) - offsets[1] + sphere.vertices[j+1]);
+			vertices[k + 2] = 1.0f * (objects[i].position.GetBaseValue(2) - offsets[2] + sphere.vertices[j+2]);
 
 			vertices[k + 3] = simulation.objectSettings[i].color[0];
 			vertices[k + 4] = simulation.objectSettings[i].color[1];
 			vertices[k + 5] = simulation.objectSettings[i].color[2];
 			k += 6;
 		}
-
-		GLuint indices[60] = {
-			0,4,1,
-			0,9,4,
-			9,5,4,
-			4,5,8,
-			4,8,1,
-			8,10,1,
-			8,3,10,
-			5,3,8,
-			5,2,3,
-			2,7,3,
-			7,10,3,
-			7,6,10,
-			7,11,6,
-			11,0,6,
-			0,1,6,
-			6,1,10,
-			9,0,11,
-			9,11,2,
-			9,2,5,
-			7,2,11
-		};
 
 		glGenVertexArrays(1, &VAO);
 		glGenBuffers(1, &VBO);
@@ -120,10 +82,10 @@ void Visual::drawVertices() {
 		glBindVertexArray(VAO);
 
 		glBindBuffer(GL_ARRAY_BUFFER, VBO);
-		glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STREAM_DRAW);
+		glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(GLfloat), &vertices[0], GL_STREAM_DRAW);
 
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-		glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STREAM_DRAW);
+		glBufferData(GL_ELEMENT_ARRAY_BUFFER, sphere.indices.size() * sizeof(GLfloat), &sphere.indices[0], GL_STREAM_DRAW);
 
 		// Position Attribute
 		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(GLfloat), (GLvoid*)0);
@@ -137,7 +99,7 @@ void Visual::drawVertices() {
 		glBindVertexArray(0); 
 
 		glBindVertexArray(VAO);
-		glDrawElements(GL_TRIANGLES, 60, GL_UNSIGNED_INT, 0);
+		glDrawElements(GL_TRIANGLES, sphere.indices.size(), GL_UNSIGNED_INT, 0);
 		glBindVertexArray(0);
 
 		glDeleteVertexArrays(1, &VAO);
