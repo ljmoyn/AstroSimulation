@@ -62,6 +62,9 @@ public:
 	Sphere sphere = Sphere();
 	
 private:
+	//input are coordinates on a sphere
+	float GetPixelDiameter(glm::vec4 surfacePoint, glm::vec4 centerPoint);
+	void GetWindowCoordinates(glm::vec4 point, float * xWindow, float *yWindow);
 	GLuint width = 800;
 	GLuint height = 800;
 

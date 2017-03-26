@@ -57,35 +57,76 @@ Visual::~Visual()
 	glfwTerminate();
 }
 
+void Visual::GetWindowCoordinates(glm::vec4 point, float * xWindow,  float *yWindow)
+{
+	glm::vec4 clip = projection * view * model * point;
+	float xNDC = clip[0] / clip[3];
+	float yNDC = clip[1] / clip[3];
+	float zNDC = clip[2] / clip[3];
+
+	*xWindow = .5f * (float)width * xNDC + (0.0 + width / 2.0f);
+	*yWindow = .5f * (float)width * yNDC + (0.0 + height / 2.0f);
+}
+
+//http://www.songho.ca/opengl/gl_transform.html
+float Visual::GetPixelDiameter(glm::vec4 surfacePoint, glm::vec4 centerPoint)
+{
+	float xWindowSurface, yWindowSurface, xWindowCenter, yWindowCenter;
+	GetWindowCoordinates(surfacePoint, &xWindowSurface, &yWindowSurface);
+	GetWindowCoordinates(centerPoint, &xWindowCenter, &yWindowCenter);
+
+	float dx = xWindowSurface - xWindowCenter;
+	float dy = yWindowSurface - yWindowCenter;
+	return 2.0f * std::powf(dx*dx + dy*dy, .5);
+}
+
 void Visual::drawVertices() {
 	std::vector<SimulationObject> objects = simulation.getCurrentObjects();
 	std::vector<float> offsets = simulation.GetFocusOffsets(objects);
 	for (int i = 0; i < objects.size(); i++) {
 
+		bool drawAsPoint = false;
+
 		std::vector<GLfloat> vertices(2 * sphere.vertices.size());
-		int k = 0;
-		for (int j = 0; j < sphere.vertices.size(); j+=3) {
+		for (int j = 0, k = 0; j < sphere.vertices.size(); j+=3, k+=6) {
 			vertices[k] = 1.0f * (objects[i].position.GetBaseValue(0) - offsets[0] + sphere.vertices[j]);
-			vertices[k + 1] = 1.0f * (objects[i].position.GetBaseValue(1) - offsets[1] + sphere.vertices[j+1]);
-			vertices[k + 2] = 1.0f * (objects[i].position.GetBaseValue(2) - offsets[2] + sphere.vertices[j+2]);
+			vertices[k + 1] = 1.0f * (objects[i].position.GetBaseValue(1) - offsets[1] + sphere.vertices[j + 1]);
+			vertices[k + 2] = 1.0f * (objects[i].position.GetBaseValue(2) - offsets[2] + sphere.vertices[j + 2]);
+
+			if (j == 0) {
+
+				glm::vec4 surfacePoint = { 
+					vertices[k],
+					vertices[k + 1],
+					vertices[k + 2], 1.0 };
+				glm::vec4 centerPoint = { 
+					objects[i].position.GetBaseValue(0) - offsets[0],
+					objects[i].position.GetBaseValue(1) - offsets[1],
+					objects[i].position.GetBaseValue(2) - offsets[2], 1.0 };
+
+				float diameter = GetPixelDiameter(surfacePoint, centerPoint);
+				if (diameter < 2.0f) {
+					drawAsPoint = true;
+					vertices[k] = 1.0f * (objects[i].position.GetBaseValue(0) - offsets[0]);
+					vertices[k + 1] = 1.0f * (objects[i].position.GetBaseValue(1) - offsets[1]);
+					vertices[k + 2] = 1.0f * (objects[i].position.GetBaseValue(2) - offsets[2]);
+				}
+			}
 
 			vertices[k + 3] = simulation.objectSettings[i].color[0];
 			vertices[k + 4] = simulation.objectSettings[i].color[1];
 			vertices[k + 5] = simulation.objectSettings[i].color[2];
-			k += 6;
+			if (drawAsPoint)
+				break;
 		}
-
 		glGenVertexArrays(1, &VAO);
 		glGenBuffers(1, &VBO);
-		glGenBuffers(1, &EBO);
+
 		// Bind the Vertex Array Object first, then bind and set vertex buffer(s) and attribute pointer(s).
 		glBindVertexArray(VAO);
 
 		glBindBuffer(GL_ARRAY_BUFFER, VBO);
 		glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(GLfloat), &vertices[0], GL_STREAM_DRAW);
-
-		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-		glBufferData(GL_ELEMENT_ARRAY_BUFFER, sphere.indices.size() * sizeof(GLfloat), &sphere.indices[0], GL_STREAM_DRAW);
 
 		// Position Attribute
 		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(GLfloat), (GLvoid*)0);
@@ -95,11 +136,19 @@ void Visual::drawVertices() {
 		glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(GLfloat), (GLvoid*)(3 * sizeof(GLfloat)));
 		glEnableVertexAttribArray(1);
 
-		glBindBuffer(GL_ARRAY_BUFFER, 0); 
-		glBindVertexArray(0); 
+		if (drawAsPoint) {
+			glPointSize(5.0);
+			glDrawArrays(GL_POINTS, 0, 6);
+			glBindVertexArray(0);
+		}
+		else {
+			glGenBuffers(1, &EBO);
+			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+			glBufferData(GL_ELEMENT_ARRAY_BUFFER, sphere.indices.size() * sizeof(GLfloat), &sphere.indices[0], GL_STREAM_DRAW);
 
-		glBindVertexArray(VAO);
-		glDrawElements(GL_TRIANGLES, sphere.indices.size(), GL_UNSIGNED_INT, 0);
+			glBindVertexArray(VAO);
+			glDrawElements(GL_TRIANGLES, sphere.indices.size(), GL_UNSIGNED_INT, 0);
+		}
 		glBindVertexArray(0);
 
 		glDeleteVertexArrays(1, &VAO);
