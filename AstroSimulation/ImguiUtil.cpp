@@ -525,7 +525,7 @@ void TopLeftOverlay(Simulation* simulation)
 	ImGui::SetNextWindowPos(ImVec2(5, 20));
 	ImGui::Begin("TopLeftOverlay", NULL, ImVec2(0, 0), 0.3f, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoSavedSettings);
 	ImGui::Text(("Time: " + std::to_string(simulation->time)).c_str());
-	ImGui::Text("Average FPS: %.3f", ImGui::GetIO().Framerate);
+	ImGui::Text("FPS: %.3f", ImGui::GetIO().Framerate);
 	ImGui::End();
 }
 

@@ -45,8 +45,8 @@ public:
 	std::vector<std::vector<SimulationObject>> temporaryData;
 	int temporaryIndex;
 
-	ValueWithUnits<UnitType::Time> timestep = ValueWithUnits<UnitType::Time>(.25, 2);
-	ValueWithUnits<UnitType::Time> totalTime = ValueWithUnits<UnitType::Time>(.1, 0);
+	ValueWithUnits<UnitType::Time> timestep = ValueWithUnits<UnitType::Time>(0.1f, 2);
+	ValueWithUnits<UnitType::Time> totalTime = ValueWithUnits<UnitType::Time>(1.0f, 0);
 
 	int playbackSpeed;
 	int dataIndex;

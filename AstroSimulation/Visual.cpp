@@ -71,12 +71,19 @@ void Visual::GetWindowCoordinates(glm::vec4 point, float * xWindow,  float *yWin
 //http://www.songho.ca/opengl/gl_transform.html
 float Visual::GetPixelDiameter(glm::vec4 surfacePoint, glm::vec4 centerPoint)
 {
+	float dx = surfacePoint.x - centerPoint.x;
+	float dy = surfacePoint.y - centerPoint.y;
+	float dz = surfacePoint.z - centerPoint.z;
+
+	float radius = std::powf(dx*dx + dy*dy + dz*dz, .5);
+	glm::vec3 scaledRight = radius * glm::normalize(camera.Right);
+
 	float xWindowSurface, yWindowSurface, xWindowCenter, yWindowCenter;
-	GetWindowCoordinates(surfacePoint, &xWindowSurface, &yWindowSurface);
+	GetWindowCoordinates(centerPoint + glm::vec4(scaledRight, 0), &xWindowSurface, &yWindowSurface);
 	GetWindowCoordinates(centerPoint, &xWindowCenter, &yWindowCenter);
 
-	float dx = xWindowSurface - xWindowCenter;
-	float dy = yWindowSurface - yWindowCenter;
+	dx = xWindowSurface - xWindowCenter;
+	dy = yWindowSurface - yWindowCenter;
 	return 2.0f * std::powf(dx*dx + dy*dy, .5);
 }
 
@@ -105,7 +112,8 @@ void Visual::drawVertices() {
 					objects[i].position.GetBaseValue(2) - offsets[2], 1.0 };
 
 				float diameter = GetPixelDiameter(surfacePoint, centerPoint);
-				if (diameter < 2.0f) {
+
+				if (diameter < 3.0f) {
 					drawAsPoint = true;
 					vertices[k] = 1.0f * (objects[i].position.GetBaseValue(0) - offsets[0]);
 					vertices[k + 1] = 1.0f * (objects[i].position.GetBaseValue(1) - offsets[1]);
@@ -137,7 +145,7 @@ void Visual::drawVertices() {
 		glEnableVertexAttribArray(1);
 
 		if (drawAsPoint) {
-			glPointSize(5.0);
+			glPointSize(3.0);
 			glDrawArrays(GL_POINTS, 0, 6);
 			glBindVertexArray(0);
 		}
