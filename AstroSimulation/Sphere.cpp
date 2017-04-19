@@ -43,7 +43,7 @@ Sphere::Sphere() {
 		-Z, -X, 0.0
 	};
 
-	Subdivide(icosahedronVertices, icosahedronIndices, 2);
+	Subdivide(icosahedronVertices, icosahedronIndices, 3);
 	Inflate();
 }
 //http://stackoverflow.com/questions/7687148/drawing-sphere-in-opengl-without-using-glusphere

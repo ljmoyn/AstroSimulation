@@ -48,7 +48,8 @@ public:
 	//void ShowMainUi();
 	void setView();
 	void update(Shader shader);
-	void drawVertices();
+	void drawPoints();
+	void drawSpheres();
 	void drawLines();
 	static void updateLines(Simulation * simulation, std::vector<std::vector<GLfloat> > * lines, bool firstFrame);
 	static void initVisualControls(Visual* visual);
@@ -65,9 +66,13 @@ private:
 	//input are coordinates on a sphere
 	float GetPixelDiameter(glm::vec4 surfacePoint, glm::vec4 centerPoint);
 	void GetWindowCoordinates(glm::vec4 point, float * xWindow, float *yWindow);
+	void GetVertexAttributeData(bool drawAsPoint, std::vector<GLfloat> * positions, std::vector<GLfloat> * colors, int * count);
 	GLuint width = 800;
 	GLuint height = 800;
 
+	GLuint sphereVBO;
+	GLuint positionVBO;
+	GLuint colorVBO;
 	GLuint VBO;
 	GLuint VAO;
 	GLuint EBO;

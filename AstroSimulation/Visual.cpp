@@ -87,82 +87,152 @@ float Visual::GetPixelDiameter(glm::vec4 surfacePoint, glm::vec4 centerPoint)
 	return 2.0f * std::powf(dx*dx + dy*dy, .5);
 }
 
-void Visual::drawVertices() {
+void Visual::GetVertexAttributeData(bool drawAsPoint, std::vector<GLfloat>* positions, std::vector<GLfloat>* colors, int * count)
+{
 	std::vector<SimulationObject> objects = simulation.getCurrentObjects();
 	std::vector<float> offsets = simulation.GetFocusOffsets(objects);
+
 	for (int i = 0; i < objects.size(); i++) {
+		bool drawAsSphere = false;
+		glm::vec3 position = {
+			objects[i].position.GetBaseValue(0) - offsets[0],
+			objects[i].position.GetBaseValue(1) - offsets[1],
+			objects[i].position.GetBaseValue(2) - offsets[2]
+		};
 
-		bool drawAsPoint = false;
+		glm::vec4 centerPoint = glm::vec4(position, 1.0);
+		glm::vec4 surfacePoint = glm::vec4(position + glm::vec3(sphere.vertices[0], sphere.vertices[1], sphere.vertices[2]), 1.0);
+		float diameter = GetPixelDiameter(surfacePoint, centerPoint);
 
-		std::vector<GLfloat> vertices(2 * sphere.vertices.size());
-		for (int j = 0, k = 0; j < sphere.vertices.size(); j+=3, k+=6) {
-			vertices[k] = 1.0f * (objects[i].position.GetBaseValue(0) - offsets[0] + sphere.vertices[j]);
-			vertices[k + 1] = 1.0f * (objects[i].position.GetBaseValue(1) - offsets[1] + sphere.vertices[j + 1]);
-			vertices[k + 2] = 1.0f * (objects[i].position.GetBaseValue(2) - offsets[2] + sphere.vertices[j + 2]);
+		if ((drawAsPoint && diameter < 3) || (!drawAsPoint && diameter >= 3)) {
+			positions->push_back(position[0]);
+			positions->push_back(position[1]);
+			positions->push_back(position[2]);
+			colors->push_back(simulation.objectSettings[i].color[0]);
+			colors->push_back(simulation.objectSettings[i].color[1]);
+			colors->push_back(simulation.objectSettings[i].color[2]);
 
-			if (j == 0) {
-
-				glm::vec4 surfacePoint = { 
-					vertices[k],
-					vertices[k + 1],
-					vertices[k + 2], 1.0 };
-				glm::vec4 centerPoint = { 
-					objects[i].position.GetBaseValue(0) - offsets[0],
-					objects[i].position.GetBaseValue(1) - offsets[1],
-					objects[i].position.GetBaseValue(2) - offsets[2], 1.0 };
-
-				float diameter = GetPixelDiameter(surfacePoint, centerPoint);
-
-				if (diameter < 3.0f) {
-					drawAsPoint = true;
-					vertices[k] = 1.0f * (objects[i].position.GetBaseValue(0) - offsets[0]);
-					vertices[k + 1] = 1.0f * (objects[i].position.GetBaseValue(1) - offsets[1]);
-					vertices[k + 2] = 1.0f * (objects[i].position.GetBaseValue(2) - offsets[2]);
-				}
-			}
-
-			vertices[k + 3] = simulation.objectSettings[i].color[0];
-			vertices[k + 4] = simulation.objectSettings[i].color[1];
-			vertices[k + 5] = simulation.objectSettings[i].color[2];
-			if (drawAsPoint)
-				break;
+			(*count)++;
 		}
-		glGenVertexArrays(1, &VAO);
-		glGenBuffers(1, &VBO);
-
-		// Bind the Vertex Array Object first, then bind and set vertex buffer(s) and attribute pointer(s).
-		glBindVertexArray(VAO);
-
-		glBindBuffer(GL_ARRAY_BUFFER, VBO);
-		glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(GLfloat), &vertices[0], GL_STREAM_DRAW);
-
-		// Position Attribute
-		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(GLfloat), (GLvoid*)0);
-		glEnableVertexAttribArray(0);
-
-		// Color attribute
-		glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(GLfloat), (GLvoid*)(3 * sizeof(GLfloat)));
-		glEnableVertexAttribArray(1);
-
-		if (drawAsPoint) {
-			glPointSize(3.0);
-			glDrawArrays(GL_POINTS, 0, 6);
-			glBindVertexArray(0);
-		}
-		else {
-			glGenBuffers(1, &EBO);
-			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-			glBufferData(GL_ELEMENT_ARRAY_BUFFER, sphere.indices.size() * sizeof(GLfloat), &sphere.indices[0], GL_STREAM_DRAW);
-
-			glBindVertexArray(VAO);
-			glDrawElements(GL_TRIANGLES, sphere.indices.size(), GL_UNSIGNED_INT, 0);
-		}
-		glBindVertexArray(0);
-
-		glDeleteVertexArrays(1, &VAO);
-		glDeleteBuffers(1, &VBO);
-		glDeleteBuffers(1, &EBO);
 	}
+
+}
+
+void Visual::drawPoints() {
+	std::vector<GLfloat> positions = {};
+	std::vector<GLfloat> colors = {};
+	int numPoints = 0;
+	GetVertexAttributeData(true, &positions, &colors, &numPoints);
+
+	if (numPoints == 0)
+		return;
+
+	// Bind the Vertex Array Object first, then bind and set vertex buffer(s) and attribute pointer(s).
+	glGenVertexArrays(1, &VAO);
+	glBindVertexArray(VAO);
+
+	// Vertex Attribute
+	glGenBuffers(1, &sphereVBO);
+	glEnableVertexAttribArray(0);
+	glBindBuffer(GL_ARRAY_BUFFER, sphereVBO);
+
+	//vertices is just a vector of zeroes, since the points will be positioned in the shader
+	std::vector<GLfloat> vertices = std::vector<GLfloat>(numPoints, 0);
+	glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(GLfloat), &(vertices[0]), GL_STREAM_DRAW);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), (GLvoid*)0);
+
+	// Color attribute
+	glGenBuffers(1, &colorVBO);
+	glEnableVertexAttribArray(1);
+	glBindBuffer(GL_ARRAY_BUFFER, colorVBO);
+	glBufferData(GL_ARRAY_BUFFER, colors.size() * sizeof(GLfloat), &colors[0], GL_STREAM_DRAW);
+
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), (GLvoid*)0);
+	glVertexAttribDivisor(1, 1);
+
+	// Position attribute
+	glGenBuffers(1, &positionVBO);
+	glEnableVertexAttribArray(2);
+	glBindBuffer(GL_ARRAY_BUFFER, positionVBO);
+	glBufferData(GL_ARRAY_BUFFER, positions.size() * sizeof(GLfloat), &positions[0], GL_STREAM_DRAW);
+
+	glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), (GLvoid*)0);
+	glVertexAttribDivisor(2, 1);
+
+	// bind VAO and draw the elements
+	glBindVertexArray(VAO);
+	glPointSize(3.0);
+	glDrawArraysInstanced(GL_POINTS, 0, 3, numPoints);
+
+	// unbind VAO
+	glBindVertexArray(0);
+
+	// cleanup buffers
+	glDeleteVertexArrays(1, &VAO);
+	glDeleteBuffers(1, &sphereVBO);
+	glDeleteBuffers(1, &colorVBO);
+	glDeleteBuffers(1, &positionVBO);
+
+	glDeleteBuffers(1, &EBO);
+}
+
+void Visual::drawSpheres() {
+	std::vector<GLfloat> positions = {};
+	std::vector<GLfloat> colors = {};
+	int numSpheres = 0;
+	GetVertexAttributeData(false, &positions, &colors, &numSpheres);
+
+	if (numSpheres == 0)
+		return;
+
+	// Bind the Vertex Array Object first, then bind and set vertex buffer(s) and attribute pointer(s).
+	glGenVertexArrays(1, &VAO);
+	glBindVertexArray(VAO);
+
+	// Vertex Attribute
+	glGenBuffers(1, &sphereVBO);
+	glEnableVertexAttribArray(0);
+	glBindBuffer(GL_ARRAY_BUFFER, sphereVBO);
+	glBufferData(GL_ARRAY_BUFFER, sphere.vertices.size() * sizeof(GLfloat), &(sphere.vertices[0]), GL_STREAM_DRAW);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), (GLvoid*)0);
+
+	// Color attribute
+	glGenBuffers(1, &colorVBO);
+	glEnableVertexAttribArray(1);
+	glBindBuffer(GL_ARRAY_BUFFER, colorVBO);
+	glBufferData(GL_ARRAY_BUFFER, colors.size() * sizeof(GLfloat), &colors[0], GL_STREAM_DRAW);
+
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), (GLvoid*)0);
+	glVertexAttribDivisor(1, 1);
+
+	// Position attribute
+	glGenBuffers(1, &positionVBO);
+	glEnableVertexAttribArray(2);
+	glBindBuffer(GL_ARRAY_BUFFER, positionVBO);
+	glBufferData(GL_ARRAY_BUFFER, positions.size() * sizeof(GLfloat), &positions[0], GL_STREAM_DRAW);
+
+	glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), (GLvoid*)0);
+	glVertexAttribDivisor(2, 1);
+
+	// element buffer 
+	glGenBuffers(1, &EBO);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sphere.indices.size() * sizeof(GLfloat), &sphere.indices[0], GL_STREAM_DRAW);
+
+	// bind VAO and draw the elements
+	glBindVertexArray(VAO);
+	glDrawElementsInstanced(GL_TRIANGLES, sphere.indices.size(), GL_UNSIGNED_INT, 0, numSpheres);
+	
+	// unbind VAO
+	glBindVertexArray(0);
+
+	// cleanup buffers
+	glDeleteVertexArrays(1, &VAO);
+	glDeleteBuffers(1, &sphereVBO);
+	glDeleteBuffers(1, &colorVBO);
+	glDeleteBuffers(1, &positionVBO);
+
+	glDeleteBuffers(1, &EBO);
 }
 
 void Visual::updateLines(Simulation * simulation, std::vector<std::vector<GLfloat> > * lines, bool firstFrame) {
@@ -286,8 +356,9 @@ void Visual::update(Shader shader)
 	glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
 	glUniformMatrix4fv(projLoc, 1, GL_FALSE, glm::value_ptr(projection));
 
-	drawVertices();
-	drawLines();
+	drawSpheres();
+	drawPoints();
+	//drawLines();
 
 	ImGui::Render();
 
