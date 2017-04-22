@@ -47,22 +47,31 @@ public:
 	void window_resize_callback(GLFWwindow* window, int x, int y);
 	//void ShowMainUi();
 	void setView();
-	void update(Shader shader);
-	void drawPoints();
-	void drawSpheres();
-	void drawLines();
-	static void updateLines(Simulation * simulation, std::vector<std::vector<GLfloat> > * lines, bool firstFrame);
+	void update();
+
+	static void updatePaths(Simulation * simulation, std::vector<std::vector<GLfloat> > * paths, bool firstFrame);
 	static void initVisualControls(Visual* visual);
 
 	Simulation simulation;
 	GLFWwindow* window;
-	std::vector<std::vector<GLfloat> > lines;
+	std::vector<std::vector<GLfloat> > paths;
 	ImguiStatus imguiStatus;
 
 	Camera camera;
 	Sphere sphere = Sphere();
+
+
 	
 private:
+
+	void drawObjects();
+	void drawPoints();
+	void drawSpheres();
+	void drawLines();
+
+	GLuint simulationObjectsShaderProgram;
+	GLuint simulationPathsShaderProgram;
+
 	//input are coordinates on a sphere
 	float GetPixelDiameter(glm::vec4 surfacePoint, glm::vec4 centerPoint);
 	void GetWindowCoordinates(glm::vec4 point, float * xWindow, float *yWindow);
@@ -73,7 +82,7 @@ private:
 	GLuint sphereVBO;
 	GLuint positionVBO;
 	GLuint colorVBO;
-	GLuint VBO;
+	GLuint vertexVBO;
 	GLuint VAO;
 	GLuint EBO;
 

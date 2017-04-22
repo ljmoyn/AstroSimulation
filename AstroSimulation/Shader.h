@@ -8,12 +8,10 @@
 
 #include <GL/glew.h>
 
-class Shader
+static class Shader
 {
 public:
-	GLuint Program;
-	// Constructor generates the shader on the fly
-	Shader(const GLchar* vertexPath, const GLchar* fragmentPath)
+	static void InitShader(GLuint * program, const GLchar* vertexPath, const GLchar* fragmentPath)
 	{
 		// 1. Retrieve the vertex/fragment source code from filePath
 		std::string vertexCode;
@@ -72,26 +70,21 @@ public:
 			std::cout << "ERROR::SHADER::FRAGMENT::COMPILATION_FAILED\n" << infoLog << std::endl;
 		}
 		// Shader Program
-		this->Program = glCreateProgram();
-		glAttachShader(this->Program, vertex);
-		glAttachShader(this->Program, fragment);
-		glLinkProgram(this->Program);
+		*program = glCreateProgram();
+		glAttachShader(*program, vertex);
+		glAttachShader(*program, fragment);
+		glLinkProgram(*program);
 		// Print linking errors if any
-		glGetProgramiv(this->Program, GL_LINK_STATUS, &success);
+		glGetProgramiv(*program, GL_LINK_STATUS, &success);
 		if (!success)
 		{
-			glGetProgramInfoLog(this->Program, 512, NULL, infoLog);
+			glGetProgramInfoLog(*program, 512, NULL, infoLog);
 			std::cout << "ERROR::SHADER::PROGRAM::LINKING_FAILED\n" << infoLog << std::endl;
 		}
 		// Delete the shaders as they're linked into our program now and no longer necessery
 		glDeleteShader(vertex);
 		glDeleteShader(fragment);
 
-	}
-	// Uses the current shader
-	void Use()
-	{
-		glUseProgram(this->Program);
 	}
 };
 

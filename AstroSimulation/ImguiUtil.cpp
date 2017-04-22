@@ -650,7 +650,7 @@ void MenuBar(Simulation* simulation, ImguiStatus* imguiStatus) {
 	SavePopup(simulation, imguiStatus);
 }
 
-void ShowMainUi(Simulation* simulation, std::vector<std::vector<GLfloat> > * lines, Camera* camera, ImguiStatus* imguiStatus, float* xTranslate, float* yTranslate, float* zTranslate)
+void ShowMainUi(Simulation* simulation, std::vector<std::vector<GLfloat> > * paths, Camera* camera, ImguiStatus* imguiStatus, float* xTranslate, float* yTranslate, float* zTranslate)
 {
 	ImGuiWindowFlags window_flags = 0;
 	window_flags |= ImGuiWindowFlags_ShowBorders;
@@ -767,7 +767,7 @@ void ShowMainUi(Simulation* simulation, std::vector<std::vector<GLfloat> > * lin
 			std::vector<SimulationObject> currentFrame = simulation->getCurrentObjects();
 			simulation->computedData = { currentFrame };
 			simulation->dataIndex = 0;
-			Visual::updateLines(simulation, lines, true);
+			Visual::updatePaths(simulation, paths, true);
 
 			ImGui::SetNextWindowSize(ImVec2(300, 100), ImGuiSetCond_FirstUseEver);
 			ImGui::OpenPopup("Computing timesteps...");
@@ -780,7 +780,7 @@ void ShowMainUi(Simulation* simulation, std::vector<std::vector<GLfloat> > * lin
 				ImGui::CloseCurrentPopup();
 			else {
 				simulation->step(simulation->timestep.GetBaseValue());
-				Visual::updateLines(simulation, lines, false);
+				Visual::updatePaths(simulation, paths, false);
 			}
 			sprintf_s(progressString, "%d/%d", simulation->dataIndex + 1, totalTimesteps);
 
@@ -811,7 +811,7 @@ void ShowMainUi(Simulation* simulation, std::vector<std::vector<GLfloat> > * lin
 			int originalIndex = simulation->dataIndex;
 
 			for (simulation->dataIndex = 0; simulation->dataIndex < simulation->computedData.size(); simulation->dataIndex++)
-				Visual::updateLines(simulation, lines, simulation->dataIndex == 0);
+				Visual::updatePaths(simulation, paths, simulation->dataIndex == 0);
 
 			simulation->dataIndex = originalIndex;
 

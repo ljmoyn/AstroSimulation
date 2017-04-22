@@ -2,53 +2,52 @@
 
 Visual::Visual(std::string simulationSource)
 {
-	Simulation::FromXml(&simulation, simulationSource);
-
-	// Init GLFW
+	// Initialize GLFW
 	glfwInit();
-	// Set all the required options for GLFW
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-	//glfwWindowHint(GLFW_RESIZABLE, GL_FALSE);
 
-	// Create a GLFWwindow object that we can use for GLFW's functions
+	// Create a GLFWwindow and setup viewport
 	const GLFWvidmode * mode = glfwGetVideoMode(glfwGetPrimaryMonitor());
-
 	width = (mode->width) * 2 / 3;
 	height = (mode->height) * 2 / 3;
 	window = glfwCreateWindow(width, height, "Astro Simulation", nullptr, nullptr);
 	glfwMakeContextCurrent(window);
+	glViewport(0, 0, width, height);
+	glEnable(GL_DEPTH_TEST);
 
 	// Set this to true so GLEW knows to use a modern approach to retrieving function pointers and extensions
 	glewExperimental = GL_TRUE;
-	// Initialize GLEW to setup the OpenGL Function pointers
+	// Initialize GLEW
 	glewInit();
 
-	// Setup ImGui binding
+	// Initialize shaders. Must call after other GL initializations
+	Shader::InitShader(&simulationObjectsShaderProgram, "ObjectVertex.shader", "ObjectFragment.shader");
+	Shader::InitShader(&simulationPathsShaderProgram, "PathVertex.shader", "PathFragment.shader");
+
+	// Initialize ImGui
 	ImGui_ImplGlfwGL3_Init(window, false);
+	imguiStatus.saveFiles = imguiStatus.GetAllFilesInFolder("../saves");
+	imguiStatus.selected.resize(imguiStatus.saveFiles.size());
+	std::fill(imguiStatus.selected.begin(), imguiStatus.selected.end(), false);
+	if (!imguiStatus.selected.empty())
+		imguiStatus.selected[0] = true;
 
-	// Define the viewport dimensions
-	glViewport(0, 0, width, height);
-
-	// Setup OpenGL options
-	glEnable(GL_DEPTH_TEST);
+	// barely used. Should probably refactor
 	camera = Camera();
 
+	// get simulation data
+	Simulation::FromXml(&simulation, simulationSource);
+
 	for (int i = 0; i < simulation.getCurrentObjects().size(); i++)
-		lines.push_back({});
+		paths.push_back({});
 
 	xTranslate = 0.0;
 	yTranslate = 0.0;
 	zTranslate = -1000000.0;
 	setView();
 	model = glm::mat4();
-
-	imguiStatus.saveFiles = imguiStatus.GetAllFilesInFolder("../saves");
-	imguiStatus.selected.resize(imguiStatus.saveFiles.size());
-	std::fill(imguiStatus.selected.begin(), imguiStatus.selected.end(), false);
-	if (!imguiStatus.selected.empty())
-		imguiStatus.selected[0] = true;
 }
 
 Visual::~Visual()
@@ -57,7 +56,7 @@ Visual::~Visual()
 	glfwTerminate();
 }
 
-void Visual::GetWindowCoordinates(glm::vec4 point, float * xWindow,  float *yWindow)
+void Visual::GetWindowCoordinates(glm::vec4 point, float * xWindow, float *yWindow)
 {
 	glm::vec4 clip = projection * view * model * point;
 	float xNDC = clip[0] / clip[3];
@@ -118,7 +117,26 @@ void Visual::GetVertexAttributeData(bool drawAsPoint, std::vector<GLfloat>* posi
 
 }
 
+void Visual::drawObjects()
+{
+	// todo: make shader a part of the class so I only need to initialize in constructor
+	glUseProgram(simulationObjectsShaderProgram);
+	// Get their uniform location
+	GLint modelLoc = glGetUniformLocation(simulationObjectsShaderProgram, "model");
+	GLint viewLoc = glGetUniformLocation(simulationObjectsShaderProgram, "view");
+	GLint projLoc = glGetUniformLocation(simulationObjectsShaderProgram, "projection");
+
+	// Pass them to the shaders
+	glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
+	glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
+	glUniformMatrix4fv(projLoc, 1, GL_FALSE, glm::value_ptr(projection));
+
+	drawPoints();
+	drawSpheres();
+}
+
 void Visual::drawPoints() {
+
 	std::vector<GLfloat> positions = {};
 	std::vector<GLfloat> colors = {};
 	int numPoints = 0;
@@ -132,9 +150,9 @@ void Visual::drawPoints() {
 	glBindVertexArray(VAO);
 
 	// Vertex Attribute
-	glGenBuffers(1, &sphereVBO);
+	glGenBuffers(1, &vertexVBO);
 	glEnableVertexAttribArray(0);
-	glBindBuffer(GL_ARRAY_BUFFER, sphereVBO);
+	glBindBuffer(GL_ARRAY_BUFFER, vertexVBO);
 
 	//vertices is just a vector of zeroes, since the points will be positioned in the shader
 	std::vector<GLfloat> vertices = std::vector<GLfloat>(numPoints, 0);
@@ -222,7 +240,7 @@ void Visual::drawSpheres() {
 	// bind VAO and draw the elements
 	glBindVertexArray(VAO);
 	glDrawElementsInstanced(GL_TRIANGLES, sphere.indices.size(), GL_UNSIGNED_INT, 0, numSpheres);
-	
+
 	// unbind VAO
 	glBindVertexArray(0);
 
@@ -235,20 +253,17 @@ void Visual::drawSpheres() {
 	glDeleteBuffers(1, &EBO);
 }
 
-void Visual::updateLines(Simulation * simulation, std::vector<std::vector<GLfloat> > * lines, bool firstFrame) {
+void Visual::updatePaths(Simulation * simulation, std::vector<std::vector<GLfloat> > * paths, bool firstFrame) {
 	std::vector<SimulationObject> currentObjects = simulation->getCurrentObjects();
 	if (firstFrame) {
-		*lines = {};
+		*paths = {};
 		for (int i = 0; i < simulation->getCurrentObjects().size(); i++) {
 			std::vector<float> offsets = simulation->GetFocusOffsets(currentObjects);
 
-			lines->push_back({
+			paths->push_back({
 				currentObjects[i].position.GetBaseValue(0) - offsets[0],
 				currentObjects[i].position.GetBaseValue(1) - offsets[1],
 				currentObjects[i].position.GetBaseValue(2) - offsets[2],
-				simulation->objectSettings[i].color[0],
-				simulation->objectSettings[i].color[1],
-				simulation->objectSettings[i].color[2]
 			});
 		}
 
@@ -257,13 +272,9 @@ void Visual::updateLines(Simulation * simulation, std::vector<std::vector<GLfloa
 		for (int i = 0; i < currentObjects.size(); i++) {
 			std::vector<float> offsets = simulation->GetFocusOffsets(currentObjects);
 
-			(*lines)[i].push_back(currentObjects[i].position.GetBaseValue(0) - offsets[0]);
-			(*lines)[i].push_back(currentObjects[i].position.GetBaseValue(1) - offsets[1]);
-			(*lines)[i].push_back(currentObjects[i].position.GetBaseValue(2) - offsets[2]);
-
-			(*lines)[i].push_back(simulation->objectSettings[i].color[0]);
-			(*lines)[i].push_back(simulation->objectSettings[i].color[1]);
-			(*lines)[i].push_back(simulation->objectSettings[i].color[2]);
+			(*paths)[i].push_back(currentObjects[i].position.GetBaseValue(0) - offsets[0]);
+			(*paths)[i].push_back(currentObjects[i].position.GetBaseValue(1) - offsets[1]);
+			(*paths)[i].push_back(currentObjects[i].position.GetBaseValue(2) - offsets[2]);
 		}
 	}
 }
@@ -272,48 +283,64 @@ void Visual::drawLines() {
 	if (simulation.computedData.size() < 2)
 		return;
 
+	glUseProgram(simulationPathsShaderProgram);
+	// Get uniform location
+	GLint modelLoc = glGetUniformLocation(simulationPathsShaderProgram, "model");
+	GLint viewLoc = glGetUniformLocation(simulationPathsShaderProgram, "view");
+	GLint projLoc = glGetUniformLocation(simulationPathsShaderProgram, "projection");
+
+	// Pass them to the shaders
+	glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
+	glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
+	glUniformMatrix4fv(projLoc, 1, GL_FALSE, glm::value_ptr(projection));
+
 	std::vector<SimulationObject> objects = simulation.getCurrentObjects();
 	for (int i = 0; i < objects.size(); i++) {
 
-		if (lines[i].empty())
+		if (paths[i].empty())
 			continue;
 
 		glGenVertexArrays(1, &VAO);
-		glGenBuffers(1, &VBO);
-
 		glBindVertexArray(VAO);
 
-		glBindBuffer(GL_ARRAY_BUFFER, VBO);
-		glBufferData(GL_ARRAY_BUFFER, lines[i].size() * sizeof(GLfloat), &lines[i][0], GL_STREAM_DRAW);
-
-		// Position attribute
-		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(GLfloat), (GLvoid*)0);
+		//Vertex attribute
+		glGenBuffers(1, &vertexVBO);
 		glEnableVertexAttribArray(0);
+		glBindBuffer(GL_ARRAY_BUFFER, vertexVBO);
+		glBufferData(GL_ARRAY_BUFFER, paths[i].size() * sizeof(GLfloat), &paths[i][0], GL_STREAM_DRAW);
+		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), (GLvoid*)0);
+
 		// Color attribute
-		glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(GLfloat), (GLvoid*)(3 * sizeof(GLfloat)));
+		glGenBuffers(1, &colorVBO);
 		glEnableVertexAttribArray(1);
+		glBindBuffer(GL_ARRAY_BUFFER, colorVBO);
+		glBufferData(GL_ARRAY_BUFFER, simulation.objectSettings[i].color.size() * sizeof(GLfloat), &simulation.objectSettings[i].color[0], GL_STREAM_DRAW);
 
+		glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), (GLvoid*)0);
+		glVertexAttribDivisor(1, 1);
 
-		glBindVertexArray(VAO);
 		glPointSize(1.0);
 
 		//+1 so that the line connects with the point
-		glDrawArrays(GL_LINE_STRIP, 0, simulation.dataIndex + 1);
+		//single instance, so I can pass just one copy of the color, and have it apply to evry vertex
+		glDrawArraysInstanced(GL_LINE_STRIP, 0, simulation.dataIndex + 1,1);
 		glBindVertexArray(0);
 
 		glDeleteVertexArrays(1, &VAO);
-		glDeleteBuffers(1, &VBO);
+		glDeleteBuffers(1, &vertexVBO);
+		glDeleteBuffers(1, &colorVBO);
+
 	}
 }
 
-void Visual::update(Shader shader)
+void Visual::update()
 {
 	// Check if any events have been activiated (key pressed, mouse moved etc.) and call corresponding response functions
 	glfwPollEvents();
 
 	ImGui_ImplGlfwGL3_NewFrame();
 
-	ShowMainUi(&simulation, &lines, &camera, &imguiStatus, &xTranslate, &yTranslate, &zTranslate);
+	ShowMainUi(&simulation, &paths, &camera, &imguiStatus, &xTranslate, &yTranslate, &zTranslate);
 
 	if (!imguiStatus.isPaused && simulation.dataIndex + simulation.playbackSpeed > (int)simulation.computedData.size() - 1) {
 		simulation.dataIndex = 0;
@@ -331,11 +358,6 @@ void Visual::update(Shader shader)
 	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-	// todo: make shader a part of the class so I only need to initialize in constructor
-	shader.Use();
-
-	//set view dimensions
-	//projection = glm::ortho(xRange[0], xRange[1], yRange[0], yRange[1], zRange[0], zRange[1]);
 	projection = glm::mat4();
 
 	projection = glm::infinitePerspective(
@@ -346,19 +368,8 @@ void Visual::update(Shader shader)
 
 	setView();
 
-	// Get their uniform location
-	GLint modelLoc = glGetUniformLocation(shader.Program, "model");
-	GLint viewLoc = glGetUniformLocation(shader.Program, "view");
-	GLint projLoc = glGetUniformLocation(shader.Program, "projection");
-
-	// Pass them to the shaders
-	glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
-	glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
-	glUniformMatrix4fv(projLoc, 1, GL_FALSE, glm::value_ptr(projection));
-
-	drawSpheres();
-	drawPoints();
-	//drawLines();
+	drawObjects();
+	drawLines();
 
 	ImGui::Render();
 

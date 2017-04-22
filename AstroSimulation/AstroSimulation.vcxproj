@@ -133,10 +133,6 @@
     <ClCompile Include="Visual.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="shader.fragment" />
-    <None Include="shader.vertex" />
-  </ItemGroup>
-  <ItemGroup>
     <ClInclude Include="Camera.h" />
     <ClInclude Include="Ellipse.h" />
     <ClInclude Include="imconfig.h" />
@@ -153,6 +149,12 @@
     <ClInclude Include="stb_truetype.h" />
     <ClInclude Include="ValueWithUnits.h" />
     <ClInclude Include="Visual.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="ObjectFragment.shader" />
+    <None Include="ObjectVertex.shader" />
+    <None Include="PathFragment.shader" />
+    <None Include="PathVertex.shader" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
