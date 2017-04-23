@@ -79,6 +79,7 @@ private:
 	GLuint width = 800;
 	GLuint height = 800;
 
+	std::vector<GLuint> textures;
 	GLuint sphereVBO;
 	GLuint positionVBO;
 	GLuint colorVBO;

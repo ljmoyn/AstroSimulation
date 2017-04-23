@@ -48,6 +48,42 @@ Visual::Visual(std::string simulationSource)
 	zTranslate = -1000000.0;
 	setView();
 	model = glm::mat4();
+
+	// Load and create a texture 
+	textures.push_back(0);
+	glGenTextures(1, &(textures[0]));
+	glBindTexture(GL_TEXTURE_2D, textures[0]); // All upcoming GL_TEXTURE_2D operations now have effect on our texture object
+											// Set our texture parameters
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);	// Set texture wrapping to GL_REPEAT
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+	// Set texture filtering
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	// Load, create texture and generate mipmaps
+	int twidth, theight;
+	unsigned char* image1 = SOIL_load_image("awesomeface.png", &twidth, &theight, 0, SOIL_LOAD_RGB);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, twidth, theight, 0, GL_RGB, GL_UNSIGNED_BYTE, image1);
+	glGenerateMipmap(GL_TEXTURE_2D);
+	SOIL_free_image_data(image1);
+	glBindTexture(GL_TEXTURE_2D, 0); // Unbind texture when done, so we won't accidentily mess up our texture.
+
+									 // Load and create a texture 
+	textures.push_back(0);
+	glGenTextures(1, &(textures[1]));
+	glBindTexture(GL_TEXTURE_2D, textures[1]); // All upcoming GL_TEXTURE_2D operations now have effect on our texture object
+											   // Set our texture parameters
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);	// Set texture wrapping to GL_REPEAT
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+	// Set texture filtering
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	// Load, create texture and generate mipmaps
+	unsigned char* image2 = SOIL_load_image("container.jpg", &twidth, &theight, 0, SOIL_LOAD_RGB);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, twidth, theight, 0, GL_RGB, GL_UNSIGNED_BYTE, image2);
+	glGenerateMipmap(GL_TEXTURE_2D);
+	SOIL_free_image_data(image2);
+	glBindTexture(GL_TEXTURE_2D, 0); // Unbind texture when done, so we won't accidentily mess up our texture.
+
 }
 
 Visual::~Visual()
@@ -177,6 +213,11 @@ void Visual::drawPoints() {
 	glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), (GLvoid*)0);
 	glVertexAttribDivisor(2, 1);
 
+	// texture
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, textures[0]);
+	glUniform1i(glGetUniformLocation(simulationObjectsShaderProgram, "ourTexture1"), 0);
+
 	// bind VAO and draw the elements
 	glBindVertexArray(VAO);
 	glPointSize(3.0);
@@ -231,6 +272,12 @@ void Visual::drawSpheres() {
 
 	glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), (GLvoid*)0);
 	glVertexAttribDivisor(2, 1);
+
+	// texture
+
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, textures[0]);
+	glUniform1i(glGetUniformLocation(simulationObjectsShaderProgram, "ourTexture1"), 0);
 
 	// element buffer 
 	glGenBuffers(1, &EBO);
