@@ -45,6 +45,9 @@ Sphere::Sphere() {
 
 	Subdivide(icosahedronVertices, icosahedronIndices, 3);
 	Inflate();
+
+	InitTextureCoordinates();
+
 }
 //http://stackoverflow.com/questions/7687148/drawing-sphere-in-opengl-without-using-glusphere
 //http://gamedev.stackexchange.com/questions/31308/algorithm-for-creating-spheres
@@ -85,7 +88,7 @@ void Sphere::Subdivide(std::vector<float> inputVertices, std::vector<int> inputI
 		newIndex1 = GetUpdatedIndex(index1, vertex1, &nextIndex, &indexDict);
 		newIndex2 = GetUpdatedIndex(index2, vertex2, &nextIndex, &indexDict);
 		newIndex3 = GetUpdatedIndex(index3, vertex3, &nextIndex, &indexDict);
-		
+	
 		indices.push_back(newIndex1);
 		indices.push_back(newIndex13);
 		indices.push_back(newIndex12);
@@ -169,5 +172,138 @@ void Sphere::Inflate()
 		vertices[i] = dx;
 		vertices[i+1] = dy;
 		vertices[i+2] = dz;
+	}
+}
+
+//Unused and doesn't really work, but might be handy in the future
+void Sphere::InitTextureCoordinates()
+{
+	textureCoordinates = {};
+
+	float pi = 3.14159265;
+	float maxLongitude = 0;
+	float minLongitude = 1;
+
+	std::vector<float> longitudes = {};
+	for (int i = 0; i < vertices.size(); i += 3)
+	{
+		float radius = std::sqrtf(std::powf(vertices[i], 2) + std::powf(vertices[i + 1], 2) + std::powf(vertices[i + 2], 2));
+
+		//scaled to be from 0 - 1
+		float longitude = (std::atan2(vertices[i], vertices[i + 2]) + pi) / (2 * pi);
+		float latitude = std::acos(vertices[i + 1] / radius) / pi;
+
+		if (longitude > maxLongitude)
+			maxLongitude = longitude;
+		if (longitude < minLongitude)
+			minLongitude = longitude;
+
+		longitudes.push_back(longitude);
+		textureCoordinates.push_back(longitude);
+		textureCoordinates.push_back(latitude);
+	}
+
+	//for debugging...
+	std::sort(longitudes.begin(), longitudes.end());
+
+	//https://stackoverflow.com/questions/9511499/seam-issue-when-mapping-a-texture-to-a-sphere-in-opengl
+	//https://acko.net/blog/making-worlds-1-of-spheres-and-cubes/
+	//http://wiki.alioth.net/index.php/Planettool
+
+	//note: because of the way I initialize my icosahedron, the max longitude is always going to be exactly 1 (aka 2*pi radians).
+	//if you do it differently, might need to add an extra step here to shift all the texture coordinates so that the max is at exactly 1, or the min is at exactly 0
+	std::map<int, float> maxLongitudeIndices = {};
+	std::map<int, float> minLongitudeIndices = {};
+	for (int i = 0; i < textureCoordinates.size(); i += 2) {
+		if (textureCoordinates[i] == maxLongitude) {
+			maxLongitudeIndices.insert(std::pair<int, float>(i / 2, vertices[i / 2]));
+		}
+		else if (textureCoordinates[i] == minLongitude) {
+			minLongitudeIndices.insert(std::pair<int, float>(i / 2, vertices[i / 2]));
+		}
+	}
+
+	int newIndex = vertices.size() / 3;
+	for (int i = 0; i < indices.size(); i += 3) {
+
+		//if this triangle has a vertex that is at the max texture coordinate
+		bool textureEnd = false;
+		int textureEndIndex;
+
+		//if this triangle has a vertex that is at the min texture coordinate
+		bool textureBegin = false;
+
+		for (int j = 0; j < 3; j++)
+		{
+			if (maxLongitudeIndices.find(indices[i + j]) != maxLongitudeIndices.end())
+			{
+				textureEnd = true;
+				textureEndIndex = j;
+			}
+			else if (minLongitudeIndices.find(indices[i + j]) != minLongitudeIndices.end())
+			{
+				textureBegin = true;
+			}
+		}
+
+		//if this triangle spans across the 'edge' of the  texture, from end to beginning, need to duplicate the vertex at the end of the texture, except with a tex coord of 0
+		//replace the old vertex in this triangle with the duplicate. 
+		if (textureBegin && textureEnd) {
+			//copy vertex coordinates
+			vertices.push_back(vertices[3 * indices[i + textureEndIndex]]);
+			vertices.push_back(vertices[3 * indices[i + textureEndIndex] + 1]);
+			vertices.push_back(vertices[3 * indices[i + textureEndIndex] + 2]);
+
+			textureCoordinates.push_back(0.0);
+
+			//keep same longitude as original vertex
+			textureCoordinates.push_back(textureCoordinates[2 * indices[i + textureEndIndex] + 1]);
+
+			//order matters. This comes after pushing to the new data to vectors
+			indices[i + textureEndIndex] = newIndex;
+
+			newIndex++;
+		}
+	}
+
+}
+
+bool Sphere::IsCorrectWindingOrder(glm::vec3 p1, glm::vec3 p2, glm::vec3 p3)
+{
+	glm::vec3 crossVec1 = p2 - p1;
+	glm::vec3 crossVec2 = p3 - p1;
+	glm::vec3 normal = glm::normalize(glm::cross(crossVec1, crossVec2));
+
+	//center of sphere is at origin, so this is the vector from center of the triangle, to center of the sphere 
+	glm::vec3 centerOfTriangle = glm::normalize(glm::vec3(
+		(p1[0] + p2[0] + p3[0]) / 3.0f,
+		(p1[1] + p2[1] + p3[1]) / 3.0f,
+		(p1[2] + p2[2] + p3[2]) / 3.0f
+	));
+
+	//The two vectors are either going to be the same, or negatives of each other.
+	//The winding is correct if the normal is opposite the vector towards the center, 
+	//since that means the 'front' of the triangle is on the outside of the sphere
+	return normal[2] > 0 && centerOfTriangle[2] <= 0;
+}
+
+//doesn't really work, but might be handy in the future
+void Sphere::FixIndexWinding()
+{
+	//need to make sure each triangle has a consistent winding order
+	for (int i = 0; i < indices.size(); i += 3) {
+		int index1 = indices[i];
+		int index2 = indices[i+1];
+		int index3 = indices[i+2];
+
+		glm::vec3 vertex1 = glm::vec3(vertices[3 * index1], vertices[3 * index1 + 1], vertices[3 * index1 + 2]);
+		glm::vec3 vertex2 = glm::vec3(vertices[3 * index2], vertices[3 * index2 + 1], vertices[3 * index2 + 2]);
+		glm::vec3 vertex3 = glm::vec3(vertices[3 * index3], vertices[3 * index3 + 1], vertices[3 * index3 + 2]);
+
+		//switch vertex order if necessary
+		if (!IsCorrectWindingOrder(vertex1, vertex2, vertex3)) {
+			indices[i] = index3;
+			indices[i + 2] = index1;
+		}
 	}
 }

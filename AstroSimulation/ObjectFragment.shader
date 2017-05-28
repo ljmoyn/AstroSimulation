@@ -1,13 +1,12 @@
 #version 330 core
 in vec3 vertexColor;
-in vec3 TexCoord;
+in vec2 texCoord;
+flat in int texIndex;
 
 out vec4 color;
-
-uniform sampler2D ourTexture1;
+uniform sampler2DArray textures;
 
 void main()
 {
-    //color = vec4(vertexColor, 1.0f);
-	color = texture(ourTexture1, vec2(.5, .5));
+	color = texture(textures, vec3(texCoord, texIndex));
 }

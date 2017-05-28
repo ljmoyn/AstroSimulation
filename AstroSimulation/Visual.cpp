@@ -15,7 +15,9 @@ Visual::Visual(std::string simulationSource)
 	window = glfwCreateWindow(width, height, "Astro Simulation", nullptr, nullptr);
 	glfwMakeContextCurrent(window);
 	glViewport(0, 0, width, height);
+
 	glEnable(GL_DEPTH_TEST);
+	//glEnable(GL_CULL_FACE);
 
 	// Set this to true so GLEW knows to use a modern approach to retrieving function pointers and extensions
 	glewExperimental = GL_TRUE;
@@ -49,40 +51,46 @@ Visual::Visual(std::string simulationSource)
 	setView();
 	model = glm::mat4();
 
-	// Load and create a texture 
-	textures.push_back(0);
-	glGenTextures(1, &(textures[0]));
-	glBindTexture(GL_TEXTURE_2D, textures[0]); // All upcoming GL_TEXTURE_2D operations now have effect on our texture object
-											// Set our texture parameters
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);	// Set texture wrapping to GL_REPEAT
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-	// Set texture filtering
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	// Load, create texture and generate mipmaps
 	int twidth, theight;
-	unsigned char* image1 = SOIL_load_image("awesomeface.png", &twidth, &theight, 0, SOIL_LOAD_RGB);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, twidth, theight, 0, GL_RGB, GL_UNSIGNED_BYTE, image1);
-	glGenerateMipmap(GL_TEXTURE_2D);
-	SOIL_free_image_data(image1);
-	glBindTexture(GL_TEXTURE_2D, 0); // Unbind texture when done, so we won't accidentily mess up our texture.
+	//source for the image: http://planetpixelemporium.com/earth.html
+	unsigned char* image1 = SOIL_load_image("earthmap1k.jpg", &twidth, &theight, 0, SOIL_LOAD_RGBA);
+	//unsigned char* image2 = SOIL_load_image("container.jpg", &twidth, &theight, 0, SOIL_LOAD_RGBA);
 
-									 // Load and create a texture 
-	textures.push_back(0);
-	glGenTextures(1, &(textures[1]));
-	glBindTexture(GL_TEXTURE_2D, textures[1]); // All upcoming GL_TEXTURE_2D operations now have effect on our texture object
-											   // Set our texture parameters
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);	// Set texture wrapping to GL_REPEAT
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-	// Set texture filtering
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	// Load, create texture and generate mipmaps
-	unsigned char* image2 = SOIL_load_image("container.jpg", &twidth, &theight, 0, SOIL_LOAD_RGB);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, twidth, theight, 0, GL_RGB, GL_UNSIGNED_BYTE, image2);
-	glGenerateMipmap(GL_TEXTURE_2D);
-	SOIL_free_image_data(image2);
-	glBindTexture(GL_TEXTURE_2D, 0); // Unbind texture when done, so we won't accidentily mess up our texture.
+	glGenTextures(1, &textures);
+	glBindTexture(GL_TEXTURE_2D_ARRAY, textures);
+	glTexImage3D(GL_TEXTURE_2D_ARRAY,
+		0,                // level
+		GL_RGBA8,         // Internal format
+		twidth, theight, 1, // width,height,depth
+		0,                
+		GL_RGBA,          // format
+		GL_UNSIGNED_BYTE, // type
+		0);               // pointer to data
+
+	glTexSubImage3D(GL_TEXTURE_2D_ARRAY, 0, 0, 0, 0, twidth, theight, 1, GL_RGBA, GL_UNSIGNED_BYTE, image1);
+
+	glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+	GLenum errorCode;
+	while ((errorCode = glGetError()) != GL_NO_ERROR)
+	{
+		std::string error;
+		switch (errorCode)
+		{
+		case GL_INVALID_ENUM:                  error = "INVALID_ENUM"; break;
+		case GL_INVALID_VALUE:                 error = "INVALID_VALUE"; break;
+		case GL_INVALID_OPERATION:             error = "INVALID_OPERATION"; break;
+		case GL_STACK_OVERFLOW:                error = "STACK_OVERFLOW"; break;
+		case GL_STACK_UNDERFLOW:               error = "STACK_UNDERFLOW"; break;
+		case GL_OUT_OF_MEMORY:                 error = "OUT_OF_MEMORY"; break;
+		case GL_INVALID_FRAMEBUFFER_OPERATION: error = "INVALID_FRAMEBUFFER_OPERATION"; break;
+		}
+		std::cout << error << std::endl;
+	}
+	//glTexSubImage3D(GL_TEXTURE_2D_ARRAY, 0, 0, 0, 1, twidth, theight, 1, GL_RGBA, GL_UNSIGNED_BYTE, image2);
 
 }
 
@@ -122,7 +130,7 @@ float Visual::GetPixelDiameter(glm::vec4 surfacePoint, glm::vec4 centerPoint)
 	return 2.0f * std::powf(dx*dx + dy*dy, .5);
 }
 
-void Visual::GetVertexAttributeData(bool drawAsPoint, std::vector<GLfloat>* positions, std::vector<GLfloat>* colors, int * count)
+void Visual::GetVertexAttributeData(bool drawAsPoint, std::vector<GLfloat>* positions, std::vector<GLfloat>* colors, std::vector<GLint> * textureIndices, int * count)
 {
 	std::vector<SimulationObject> objects = simulation.getCurrentObjects();
 	std::vector<float> offsets = simulation.GetFocusOffsets(objects);
@@ -146,11 +154,11 @@ void Visual::GetVertexAttributeData(bool drawAsPoint, std::vector<GLfloat>* posi
 			colors->push_back(simulation.objectSettings[i].color[0]);
 			colors->push_back(simulation.objectSettings[i].color[1]);
 			colors->push_back(simulation.objectSettings[i].color[2]);
+			textureIndices->push_back(simulation.objectSettings[i].textureIndex);
 
 			(*count)++;
 		}
 	}
-
 }
 
 void Visual::drawObjects()
@@ -175,8 +183,12 @@ void Visual::drawPoints() {
 
 	std::vector<GLfloat> positions = {};
 	std::vector<GLfloat> colors = {};
+
+	//should refactor so this isn't necessary (currently unused)
+	std::vector<GLint> textureIndices = {};
+
 	int numPoints = 0;
-	GetVertexAttributeData(true, &positions, &colors, &numPoints);
+	GetVertexAttributeData(true, &positions, &colors, &textureIndices, &numPoints);
 
 	if (numPoints == 0)
 		return;
@@ -215,8 +227,8 @@ void Visual::drawPoints() {
 
 	// texture
 	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, textures[0]);
-	glUniform1i(glGetUniformLocation(simulationObjectsShaderProgram, "ourTexture1"), 0);
+	glBindTexture(GL_TEXTURE_2D_ARRAY, textures);
+	glUniform1i(glGetUniformLocation(simulationObjectsShaderProgram, "textures"), 0);
 
 	// bind VAO and draw the elements
 	glBindVertexArray(VAO);
@@ -238,8 +250,9 @@ void Visual::drawPoints() {
 void Visual::drawSpheres() {
 	std::vector<GLfloat> positions = {};
 	std::vector<GLfloat> colors = {};
+	std::vector<GLint> textureIndices = {};
 	int numSpheres = 0;
-	GetVertexAttributeData(false, &positions, &colors, &numSpheres);
+	GetVertexAttributeData(false, &positions, &colors, &textureIndices, &numSpheres);
 
 	if (numSpheres == 0)
 		return;
@@ -273,11 +286,27 @@ void Visual::drawSpheres() {
 	glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), (GLvoid*)0);
 	glVertexAttribDivisor(2, 1);
 
-	// texture
+	// texture coordinates attribute
+	glGenBuffers(1, &textureCoordinateVBO);
+	glEnableVertexAttribArray(3);
+	glBindBuffer(GL_ARRAY_BUFFER, textureCoordinateVBO);
+	glBufferData(GL_ARRAY_BUFFER, sphere.textureCoordinates.size() * sizeof(GLfloat), &(sphere.textureCoordinates[0]), GL_STREAM_DRAW);
 
+	glVertexAttribPointer(3, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(GLfloat), (GLvoid*)0);
+
+	// texture index attribute
+	glGenBuffers(1, &textureIndexVBO);
+	glEnableVertexAttribArray(4);
+	glBindBuffer(GL_ARRAY_BUFFER, textureIndexVBO);
+	glBufferData(GL_ARRAY_BUFFER, textureIndices.size() * sizeof(GLfloat), &textureIndices[0], GL_STREAM_DRAW);
+
+	glVertexAttribPointer(4, 1, GL_FLOAT, GL_FALSE, 1 * sizeof(GLfloat), (GLvoid*)0);
+	glVertexAttribDivisor(4, 1);
+
+	// textures
 	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, textures[0]);
-	glUniform1i(glGetUniformLocation(simulationObjectsShaderProgram, "ourTexture1"), 0);
+	glBindTexture(GL_TEXTURE_2D_ARRAY, textures);
+	glUniform1i(glGetUniformLocation(simulationObjectsShaderProgram, "textures"), 0);
 
 	// element buffer 
 	glGenBuffers(1, &EBO);
@@ -296,6 +325,8 @@ void Visual::drawSpheres() {
 	glDeleteBuffers(1, &sphereVBO);
 	glDeleteBuffers(1, &colorVBO);
 	glDeleteBuffers(1, &positionVBO);
+	glDeleteBuffers(1, &textureCoordinateVBO);
+	glDeleteBuffers(1, &textureIndexVBO);
 
 	glDeleteBuffers(1, &EBO);
 }

@@ -1,8 +1,9 @@
 #include "ObjectSettings.h"
 
-ObjectSettings::ObjectSettings(bool ShowHistory, std::string DisplayType, std::string colorString)
+ObjectSettings::ObjectSettings(bool ShowHistory, std::string DisplayType, std::string colorString, int texIndex)
 {
 	showHistory = ShowHistory;
+	textureIndex = texIndex;
 	SetColorFromString(colorString);
 	SetDisplayType(DisplayType);
 }

@@ -59,11 +59,7 @@ public:
 
 	Camera camera;
 	Sphere sphere = Sphere();
-
-
-	
 private:
-
 	void drawObjects();
 	void drawPoints();
 	void drawSpheres();
@@ -75,11 +71,13 @@ private:
 	//input are coordinates on a sphere
 	float GetPixelDiameter(glm::vec4 surfacePoint, glm::vec4 centerPoint);
 	void GetWindowCoordinates(glm::vec4 point, float * xWindow, float *yWindow);
-	void GetVertexAttributeData(bool drawAsPoint, std::vector<GLfloat> * positions, std::vector<GLfloat> * colors, int * count);
+	void GetVertexAttributeData(bool drawAsPoint, std::vector<GLfloat> * positions, std::vector<GLfloat> * colors, std::vector<GLint> * textureCoordinates, int * count);
 	GLuint width = 800;
 	GLuint height = 800;
 
-	std::vector<GLuint> textures;
+	GLuint textures;
+	GLuint textureCoordinateVBO;
+	GLuint textureIndexVBO;
 	GLuint sphereVBO;
 	GLuint positionVBO;
 	GLuint colorVBO;

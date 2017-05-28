@@ -36,7 +36,8 @@ void Simulation::FromXml(Simulation *sim, std::string filename)
 		std::string displayType = currentObjectNode.node().child("Settings").child("DisplayType").text().as_string();
 
 		std::string colorString = currentObjectNode.node().child("Settings").child("Color").text().as_string();
-		ObjectSettings settings(showHistory, displayType, colorString);
+		int textureIndex = 0;
+		ObjectSettings settings(showHistory, displayType, colorString, textureIndex);
 		SimulationObject currentObject(name, mass, position, velocity);
 
 		objects.push_back(currentObject);

@@ -10,7 +10,7 @@
 class ObjectSettings
 {
 public:
-	ObjectSettings(bool showHistory, std::string displayType, std::string colorString);
+	ObjectSettings(bool showHistory, std::string displayType, std::string colorString, int textureIndex);
 	~ObjectSettings();
 
 	void SetDisplayType(std::string type);
@@ -21,6 +21,7 @@ public:
 
 	DisplayTypes displayType;
 	std::array<float, 3> color;
+	int textureIndex;
 
 private:
 
