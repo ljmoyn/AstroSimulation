@@ -45,9 +45,7 @@ Sphere::Sphere() {
 
 	Subdivide(icosahedronVertices, icosahedronIndices, 3);
 	Inflate();
-
-	InitTextureCoordinates();
-
+	//InitTextureCoordinates();
 }
 //http://stackoverflow.com/questions/7687148/drawing-sphere-in-opengl-without-using-glusphere
 //http://gamedev.stackexchange.com/questions/31308/algorithm-for-creating-spheres

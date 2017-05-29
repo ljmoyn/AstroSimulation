@@ -75,6 +75,7 @@ private:
 	GLuint width = 800;
 	GLuint height = 800;
 
+	GLuint cubemap;
 	GLuint textures;
 	GLuint textureCoordinateVBO;
 	GLuint textureIndexVBO;

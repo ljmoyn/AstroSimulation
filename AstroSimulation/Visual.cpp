@@ -47,51 +47,42 @@ Visual::Visual(std::string simulationSource)
 
 	xTranslate = 0.0;
 	yTranslate = 0.0;
-	zTranslate = -1000000.0;
+	zTranslate = -1000.0;
 	setView();
 	model = glm::mat4();
 
-	int twidth, theight;
-	//source for the image: http://planetpixelemporium.com/earth.html
-	unsigned char* image1 = SOIL_load_image("earthmap1k.jpg", &twidth, &theight, 0, SOIL_LOAD_RGBA);
-	//unsigned char* image2 = SOIL_load_image("container.jpg", &twidth, &theight, 0, SOIL_LOAD_RGBA);
+	std::vector<const GLchar*> faces;
 
-	glGenTextures(1, &textures);
-	glBindTexture(GL_TEXTURE_2D_ARRAY, textures);
-	glTexImage3D(GL_TEXTURE_2D_ARRAY,
-		0,                // level
-		GL_RGBA8,         // Internal format
-		twidth, theight, 1, // width,height,depth
-		0,                
-		GL_RGBA,          // format
-		GL_UNSIGNED_BYTE, // type
-		0);               // pointer to data
+	//source: http://planetpixelemporium.com/earth.html
+	//converted from equirectangular to cubemap using this (blender) 
+	//https://developers.theta360.com/en/forums/viewtopic.php?f=4&t=1981
+	faces.push_back("Cubemaps/earthRight.png");
+	faces.push_back("Cubemaps/earthLeft.png");
+	faces.push_back("Cubemaps/earthTop.png");
+	faces.push_back("Cubemaps/earthBottom.png");
+	faces.push_back("Cubemaps/earthBack.png");
+	faces.push_back("Cubemaps/earthFront.png");
 
-	glTexSubImage3D(GL_TEXTURE_2D_ARRAY, 0, 0, 0, 0, twidth, theight, 1, GL_RGBA, GL_UNSIGNED_BYTE, image1);
+	glGenTextures(1, &cubemap);
+	glActiveTexture(GL_TEXTURE0);
 
-	glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	int width, height;
+	unsigned char* image;
 
-	GLenum errorCode;
-	while ((errorCode = glGetError()) != GL_NO_ERROR)
+	glBindTexture(GL_TEXTURE_CUBE_MAP, cubemap);
+	for (GLuint i = 0; i < faces.size(); i++)
 	{
-		std::string error;
-		switch (errorCode)
-		{
-		case GL_INVALID_ENUM:                  error = "INVALID_ENUM"; break;
-		case GL_INVALID_VALUE:                 error = "INVALID_VALUE"; break;
-		case GL_INVALID_OPERATION:             error = "INVALID_OPERATION"; break;
-		case GL_STACK_OVERFLOW:                error = "STACK_OVERFLOW"; break;
-		case GL_STACK_UNDERFLOW:               error = "STACK_UNDERFLOW"; break;
-		case GL_OUT_OF_MEMORY:                 error = "OUT_OF_MEMORY"; break;
-		case GL_INVALID_FRAMEBUFFER_OPERATION: error = "INVALID_FRAMEBUFFER_OPERATION"; break;
-		}
-		std::cout << error << std::endl;
+		image = SOIL_load_image(faces[i], &width, &height, 0, SOIL_LOAD_RGB);
+		glTexImage2D(
+			GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0,
+			GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, image
+		);
 	}
-	//glTexSubImage3D(GL_TEXTURE_2D_ARRAY, 0, 0, 0, 1, twidth, theight, 1, GL_RGBA, GL_UNSIGNED_BYTE, image2);
-
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
 }
 
 Visual::~Visual()
@@ -286,27 +277,19 @@ void Visual::drawSpheres() {
 	glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), (GLvoid*)0);
 	glVertexAttribDivisor(2, 1);
 
-	// texture coordinates attribute
-	glGenBuffers(1, &textureCoordinateVBO);
-	glEnableVertexAttribArray(3);
-	glBindBuffer(GL_ARRAY_BUFFER, textureCoordinateVBO);
-	glBufferData(GL_ARRAY_BUFFER, sphere.textureCoordinates.size() * sizeof(GLfloat), &(sphere.textureCoordinates[0]), GL_STREAM_DRAW);
-
-	glVertexAttribPointer(3, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(GLfloat), (GLvoid*)0);
-
 	// texture index attribute
 	glGenBuffers(1, &textureIndexVBO);
-	glEnableVertexAttribArray(4);
+	glEnableVertexAttribArray(3);
 	glBindBuffer(GL_ARRAY_BUFFER, textureIndexVBO);
 	glBufferData(GL_ARRAY_BUFFER, textureIndices.size() * sizeof(GLfloat), &textureIndices[0], GL_STREAM_DRAW);
 
-	glVertexAttribPointer(4, 1, GL_FLOAT, GL_FALSE, 1 * sizeof(GLfloat), (GLvoid*)0);
-	glVertexAttribDivisor(4, 1);
+	glVertexAttribPointer(3, 1, GL_FLOAT, GL_FALSE, 1 * sizeof(GLfloat), (GLvoid*)0);
+	glVertexAttribDivisor(3, 1);
 
 	// textures
 	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D_ARRAY, textures);
-	glUniform1i(glGetUniformLocation(simulationObjectsShaderProgram, "textures"), 0);
+	glBindTexture(GL_TEXTURE_CUBE_MAP, cubemap);
+	glUniform1i(glGetUniformLocation(simulationObjectsShaderProgram, "cubemap"), 0);
 
 	// element buffer 
 	glGenBuffers(1, &EBO);
