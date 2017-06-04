@@ -46,6 +46,8 @@ Sphere::Sphere() {
 	Subdivide(icosahedronVertices, icosahedronIndices, 3);
 	Inflate();
 	//InitTextureCoordinates();
+
+	FixIndexWinding();
 }
 //http://stackoverflow.com/questions/7687148/drawing-sphere-in-opengl-without-using-glusphere
 //http://gamedev.stackexchange.com/questions/31308/algorithm-for-creating-spheres
@@ -282,7 +284,18 @@ bool Sphere::IsCorrectWindingOrder(glm::vec3 p1, glm::vec3 p2, glm::vec3 p3)
 	//The two vectors are either going to be the same, or negatives of each other.
 	//The winding is correct if the normal is opposite the vector towards the center, 
 	//since that means the 'front' of the triangle is on the outside of the sphere
-	return normal[2] > 0 && centerOfTriangle[2] <= 0;
+	bool windingIsCorrect = false;
+	for (int i = 0; i < 3; i++) {
+		if (normal[i] == 0 || centerOfTriangle[i] == 0)
+			continue;
+
+		//NOTE: Ideally, I could just check if they are equal. But even when pointing in the same direction, they are slightly off. Probably related to float precision. 
+		//Could probably clean up the way I calculate them, but it doesn't seem to matter.
+		windingIsCorrect = (normal[i] > 0 && centerOfTriangle[i] < 0) || (normal[i] < 0 && centerOfTriangle[i] > 0);
+		break;
+	}
+
+	return windingIsCorrect;
 }
 
 //doesn't really work, but might be handy in the future

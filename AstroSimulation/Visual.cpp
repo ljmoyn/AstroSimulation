@@ -4,8 +4,8 @@ Visual::Visual(std::string simulationSource)
 {
 	// Initialize GLFW
 	glfwInit();
-	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 5);
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
 	// Create a GLFWwindow and setup viewport
@@ -17,7 +17,7 @@ Visual::Visual(std::string simulationSource)
 	glViewport(0, 0, width, height);
 
 	glEnable(GL_DEPTH_TEST);
-	//glEnable(GL_CULL_FACE);
+	glEnable(GL_CULL_FACE);
 
 	// Set this to true so GLEW knows to use a modern approach to retrieving function pointers and extensions
 	glewExperimental = GL_TRUE;
@@ -47,7 +47,7 @@ Visual::Visual(std::string simulationSource)
 
 	xTranslate = 0.0;
 	yTranslate = 0.0;
-	zTranslate = -1000.0;
+	zTranslate = -1000000.0;
 	setView();
 	model = glm::mat4();
 
@@ -65,24 +65,31 @@ Visual::Visual(std::string simulationSource)
 
 	glGenTextures(1, &cubemap);
 	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_CUBE_MAP_ARRAY, cubemap);
+
+	glTexImage3D(GL_TEXTURE_CUBE_MAP_ARRAY,
+		0,                // level
+		GL_RGB8,         // Internal format
+		1024, 1024, 6, // width,height,depth (must be multiple of 6, since each cubemap is 6 images)
+		0,
+		GL_RGB,          // format
+		GL_UNSIGNED_BYTE, // type
+		0);               // pointer to data
 
 	int width, height;
 	unsigned char* image;
-
-	glBindTexture(GL_TEXTURE_CUBE_MAP, cubemap);
 	for (GLuint i = 0; i < faces.size(); i++)
 	{
 		image = SOIL_load_image(faces[i], &width, &height, 0, SOIL_LOAD_RGB);
-		glTexImage2D(
-			GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0,
-			GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, image
-		);
+		glTexSubImage3D(GL_TEXTURE_CUBE_MAP_ARRAY, 0, 0, 0, i, width, height, 1, GL_RGB, GL_UNSIGNED_BYTE, image);
+
 	}
-	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+
+	glTexParameteri(GL_TEXTURE_CUBE_MAP_ARRAY, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP_ARRAY, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP_ARRAY, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP_ARRAY, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP_ARRAY, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
 }
 
 Visual::~Visual()
@@ -288,7 +295,7 @@ void Visual::drawSpheres() {
 
 	// textures
 	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_CUBE_MAP, cubemap);
+	glBindTexture(GL_TEXTURE_CUBE_MAP_ARRAY, cubemap);
 	glUniform1i(glGetUniformLocation(simulationObjectsShaderProgram, "cubemap"), 0);
 
 	// element buffer 

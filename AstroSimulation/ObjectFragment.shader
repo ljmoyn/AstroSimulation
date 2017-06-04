@@ -1,12 +1,12 @@
-#version 330 core
+#version 450 core
 in vec3 vertexColor;
 in vec3 texCoord;
 flat in int texIndex;
 
 out vec4 color;
-uniform samplerCube cubemap;
+uniform samplerCubeArray cubemap;
 
 void main()
 {
-	color = texture(cubemap, texCoord);
+	color = texture(cubemap, vec4(texCoord, 0));
 }
