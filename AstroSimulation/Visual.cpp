@@ -128,7 +128,7 @@ float Visual::GetPixelDiameter(glm::vec4 surfacePoint, glm::vec4 centerPoint)
 	return 2.0f * std::powf(dx*dx + dy*dy, .5);
 }
 
-void Visual::GetVertexAttributeData(bool drawAsPoint, std::vector<GLfloat>* positions, std::vector<GLfloat>* colors, std::vector<GLint> * textureIndices, int * count)
+void Visual::GetVertexAttributeData(bool drawAsPoint, std::vector<GLfloat>* positions, std::vector<GLfloat>* colors, std::vector<GLint> * textureIndices, std::vector<glm::mat4> * objectOrientations, int * count)
 {
 	std::vector<SimulationObject> objects = simulation.getCurrentObjects();
 	std::vector<float> offsets = simulation.GetFocusOffsets(objects);
@@ -152,8 +152,13 @@ void Visual::GetVertexAttributeData(bool drawAsPoint, std::vector<GLfloat>* posi
 			colors->push_back(simulation.objectSettings[i].color[0]);
 			colors->push_back(simulation.objectSettings[i].color[1]);
 			colors->push_back(simulation.objectSettings[i].color[2]);
-			textureIndices->push_back(simulation.objectSettings[i].textureIndex);
 
+			textureIndices->push_back(drawAsPoint ? -1 : simulation.objectSettings[i].textureIndex);
+
+			glm::mat4 orientation = glm::mat4();
+			if(!drawAsPoint)
+				orientation = glm::rotate(orientation, glm::radians(270.0f), glm::vec3(1.f, 0.f, 0.f));
+			objectOrientations->push_back(orientation);
 			(*count)++;
 		}
 	}
@@ -184,9 +189,10 @@ void Visual::drawPoints() {
 
 	//should refactor so this isn't necessary (currently unused)
 	std::vector<GLint> textureIndices = {};
+	std::vector<glm::mat4> objectOrientations = {};
 
 	int numPoints = 0;
-	GetVertexAttributeData(true, &positions, &colors, &textureIndices, &numPoints);
+	GetVertexAttributeData(true, &positions, &colors, &textureIndices, &objectOrientations, &numPoints);
 
 	if (numPoints == 0)
 		return;
@@ -223,6 +229,38 @@ void Visual::drawPoints() {
 	glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), (GLvoid*)0);
 	glVertexAttribDivisor(2, 1);
 
+	// texture index attribute
+	glGenBuffers(1, &textureIndexVBO);
+	glEnableVertexAttribArray(3);
+	glBindBuffer(GL_ARRAY_BUFFER, textureIndexVBO);
+	glBufferData(GL_ARRAY_BUFFER, textureIndices.size() * sizeof(GLfloat), &textureIndices[0], GL_STREAM_DRAW);
+
+	glVertexAttribPointer(3, 1, GL_FLOAT, GL_FALSE, 1 * sizeof(GLfloat), (GLvoid*)0);
+	glVertexAttribDivisor(3, 1);
+
+	// orientation attribute
+
+	glGenBuffers(1, &objectOrientationVBO);
+	glBindBuffer(GL_ARRAY_BUFFER, objectOrientationVBO);
+	glBufferData(GL_ARRAY_BUFFER, objectOrientations.size() * sizeof(glm::mat4), &objectOrientations[0], GL_STREAM_DRAW);
+
+	GLsizei vec4Size = sizeof(glm::vec4);
+	glEnableVertexAttribArray(4);
+	glVertexAttribPointer(4, 4, GL_FLOAT, GL_FALSE, 4 * sizeof(glm::vec4), (void*)0);
+	glVertexAttribDivisor(4, 1);
+
+	glEnableVertexAttribArray(5);
+	glVertexAttribPointer(5, 4, GL_FLOAT, GL_FALSE, 4 * sizeof(glm::vec4), (void*)(sizeof(glm::vec4)));
+	glVertexAttribDivisor(5, 1);
+
+	glEnableVertexAttribArray(6);
+	glVertexAttribPointer(6, 4, GL_FLOAT, GL_FALSE, 4 * sizeof(glm::vec4), (void*)(2 * sizeof(glm::vec4)));
+	glVertexAttribDivisor(6, 1);
+
+	glEnableVertexAttribArray(7);
+	glVertexAttribPointer(7, 4, GL_FLOAT, GL_FALSE, 4 * sizeof(glm::vec4), (void*)(3 * sizeof(glm::vec4)));
+	glVertexAttribDivisor(7, 1);
+
 	// texture
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D_ARRAY, textures);
@@ -241,6 +279,9 @@ void Visual::drawPoints() {
 	glDeleteBuffers(1, &sphereVBO);
 	glDeleteBuffers(1, &colorVBO);
 	glDeleteBuffers(1, &positionVBO);
+	glDeleteBuffers(1, &textureCoordinateVBO);
+	glDeleteBuffers(1, &textureIndexVBO);
+	glDeleteBuffers(1, &objectOrientationVBO);
 
 	glDeleteBuffers(1, &EBO);
 }
@@ -249,8 +290,9 @@ void Visual::drawSpheres() {
 	std::vector<GLfloat> positions = {};
 	std::vector<GLfloat> colors = {};
 	std::vector<GLint> textureIndices = {};
+	std::vector<glm::mat4> objectOrientations = {};
 	int numSpheres = 0;
-	GetVertexAttributeData(false, &positions, &colors, &textureIndices, &numSpheres);
+	GetVertexAttributeData(false, &positions, &colors, &textureIndices, &objectOrientations, &numSpheres);
 
 	if (numSpheres == 0)
 		return;
@@ -293,6 +335,29 @@ void Visual::drawSpheres() {
 	glVertexAttribPointer(3, 1, GL_FLOAT, GL_FALSE, 1 * sizeof(GLfloat), (GLvoid*)0);
 	glVertexAttribDivisor(3, 1);
 
+	// orientation attribute
+
+	glGenBuffers(1, &objectOrientationVBO);
+	glBindBuffer(GL_ARRAY_BUFFER, objectOrientationVBO);
+	glBufferData(GL_ARRAY_BUFFER, objectOrientations.size() * sizeof(glm::mat4), &objectOrientations[0], GL_STREAM_DRAW);
+
+	GLsizei vec4Size = sizeof(glm::vec4);
+	glEnableVertexAttribArray(4);
+	glVertexAttribPointer(4, 4, GL_FLOAT, GL_FALSE, 4 * sizeof(glm::vec4), (void*)0);
+	glVertexAttribDivisor(4, 1);
+
+	glEnableVertexAttribArray(5);
+	glVertexAttribPointer(5, 4, GL_FLOAT, GL_FALSE, 4 * sizeof(glm::vec4), (void*)(sizeof(glm::vec4)));
+	glVertexAttribDivisor(5, 1);
+
+	glEnableVertexAttribArray(6);
+	glVertexAttribPointer(6, 4, GL_FLOAT, GL_FALSE, 4 * sizeof(glm::vec4), (void*)(2 * sizeof(glm::vec4)));
+	glVertexAttribDivisor(6, 1);
+
+	glEnableVertexAttribArray(7);
+	glVertexAttribPointer(7, 4, GL_FLOAT, GL_FALSE, 4 * sizeof(glm::vec4), (void*)(3 * sizeof(glm::vec4)));
+	glVertexAttribDivisor(7, 1);
+
 	// textures
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_CUBE_MAP_ARRAY, cubemap);
@@ -317,6 +382,7 @@ void Visual::drawSpheres() {
 	glDeleteBuffers(1, &positionVBO);
 	glDeleteBuffers(1, &textureCoordinateVBO);
 	glDeleteBuffers(1, &textureIndexVBO);
+	glDeleteBuffers(1, &objectOrientationVBO);
 
 	glDeleteBuffers(1, &EBO);
 }

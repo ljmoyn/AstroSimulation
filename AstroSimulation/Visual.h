@@ -71,12 +71,13 @@ private:
 	//input are coordinates on a sphere
 	float GetPixelDiameter(glm::vec4 surfacePoint, glm::vec4 centerPoint);
 	void GetWindowCoordinates(glm::vec4 point, float * xWindow, float *yWindow);
-	void GetVertexAttributeData(bool drawAsPoint, std::vector<GLfloat> * positions, std::vector<GLfloat> * colors, std::vector<GLint> * textureCoordinates, int * count);
+	void GetVertexAttributeData(bool drawAsPoint, std::vector<GLfloat> * positions, std::vector<GLfloat> * colors, std::vector<GLint> * textureCoordinates, std::vector<glm::mat4> * objectOrientations, int * count);
 	GLuint width = 800;
 	GLuint height = 800;
 
 	GLuint cubemap;
 	GLuint textures;
+	GLuint objectOrientationVBO;
 	GLuint textureCoordinateVBO;
 	GLuint textureIndexVBO;
 	GLuint sphereVBO;
