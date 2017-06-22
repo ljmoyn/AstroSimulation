@@ -25,8 +25,9 @@ Visual::Visual(std::string simulationSource)
 	glewInit();
 
 	// Initialize shaders. Must call after other GL initializations
-	Shader::InitShader(&simulationObjectsShaderProgram, "ObjectVertex.shader", "ObjectFragment.shader");
-	Shader::InitShader(&simulationPathsShaderProgram, "PathVertex.shader", "PathFragment.shader");
+	Shader::InitShader(&pointsShaderProgram, "PointVertex.shader", "PointFragment.shader");
+	Shader::InitShader(&objectsShaderProgram, "ObjectVertex.shader", "ObjectFragment.shader");
+	Shader::InitShader(&pathsShaderProgram, "PathVertex.shader", "PathFragment.shader");
 
 	// Initialize ImGui
 	ImGui_ImplGlfwGL3_Init(window, false);
@@ -128,7 +129,7 @@ float Visual::GetPixelDiameter(glm::vec4 surfacePoint, glm::vec4 centerPoint)
 	return 2.0f * std::powf(dx*dx + dy*dy, .5);
 }
 
-void Visual::GetVertexAttributeData(bool drawAsPoint, std::vector<GLfloat>* positions, std::vector<GLfloat>* colors, std::vector<GLint> * textureIndices, std::vector<glm::mat4> * objectOrientations, int * count)
+void Visual::GetVertexAttributeData(bool drawAsPoint, std::vector<GLfloat>* positions, std::vector<GLfloat>* colors, std::vector<GLint> * textureIndices, std::vector<glm::mat4> * instanceModels, int * count)
 {
 	std::vector<SimulationObject> objects = simulation.getCurrentObjects();
 	std::vector<float> offsets = simulation.GetFocusOffsets(objects);
@@ -153,33 +154,18 @@ void Visual::GetVertexAttributeData(bool drawAsPoint, std::vector<GLfloat>* posi
 			colors->push_back(simulation.objectSettings[i].color[1]);
 			colors->push_back(simulation.objectSettings[i].color[2]);
 
-			textureIndices->push_back(drawAsPoint ? -1 : simulation.objectSettings[i].textureIndex);
+			if (!drawAsPoint) {
+				textureIndices->push_back(drawAsPoint ? -1 : simulation.objectSettings[i].textureIndex);
 
-			glm::mat4 orientation = glm::mat4();
-			if(!drawAsPoint)
-				orientation = glm::rotate(orientation, glm::radians(270.0f), glm::vec3(1.f, 0.f, 0.f));
-			objectOrientations->push_back(orientation);
+				glm::mat4 orientation = glm::mat4();
+				if (!drawAsPoint)
+					orientation = glm::rotate(orientation, glm::radians(270.0f), glm::vec3(1.f, 0.f, 0.f));
+				instanceModels->push_back(orientation);
+			}
+			
 			(*count)++;
 		}
 	}
-}
-
-void Visual::drawObjects()
-{
-	// todo: make shader a part of the class so I only need to initialize in constructor
-	glUseProgram(simulationObjectsShaderProgram);
-	// Get their uniform location
-	GLint modelLoc = glGetUniformLocation(simulationObjectsShaderProgram, "model");
-	GLint viewLoc = glGetUniformLocation(simulationObjectsShaderProgram, "view");
-	GLint projLoc = glGetUniformLocation(simulationObjectsShaderProgram, "projection");
-
-	// Pass them to the shaders
-	glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
-	glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
-	glUniformMatrix4fv(projLoc, 1, GL_FALSE, glm::value_ptr(projection));
-
-	drawPoints();
-	drawSpheres();
 }
 
 void Visual::drawPoints() {
@@ -187,30 +173,31 @@ void Visual::drawPoints() {
 	std::vector<GLfloat> positions = {};
 	std::vector<GLfloat> colors = {};
 
-	//should refactor so this isn't necessary (currently unused)
-	std::vector<GLint> textureIndices = {};
-	std::vector<glm::mat4> objectOrientations = {};
-
 	int numPoints = 0;
-	GetVertexAttributeData(true, &positions, &colors, &textureIndices, &objectOrientations, &numPoints);
-
+	GetVertexAttributeData(true, &positions, &colors, nullptr, nullptr, &numPoints);
 	if (numPoints == 0)
 		return;
 
-	// Bind the Vertex Array Object first, then bind and set vertex buffer(s) and attribute pointer(s).
+	glUseProgram(pointsShaderProgram);
+
+	// Get their uniform location
+	GLint viewLoc = glGetUniformLocation(pointsShaderProgram, "view");
+	GLint projLoc = glGetUniformLocation(pointsShaderProgram, "projection");
+
+	// Pass them to the shaders
+	glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
+	glUniformMatrix4fv(projLoc, 1, GL_FALSE, glm::value_ptr(projection));
+
 	glGenVertexArrays(1, &VAO);
 	glBindVertexArray(VAO);
 
-	// Vertex Attribute
-	glGenBuffers(1, &vertexVBO);
+	// Position attribute
+	glGenBuffers(1, &positionVBO);
 	glEnableVertexAttribArray(0);
-	glBindBuffer(GL_ARRAY_BUFFER, vertexVBO);
+	glBindBuffer(GL_ARRAY_BUFFER, positionVBO);
+	glBufferData(GL_ARRAY_BUFFER, positions.size() * sizeof(GLfloat), &positions[0], GL_STREAM_DRAW);
 
-	//vertices is just a vector of zeroes, since the points will be positioned in the shader
-	std::vector<GLfloat> vertices = std::vector<GLfloat>(numPoints, 0);
-	glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(GLfloat), &(vertices[0]), GL_STREAM_DRAW);
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), (GLvoid*)0);
-
 	// Color attribute
 	glGenBuffers(1, &colorVBO);
 	glEnableVertexAttribArray(1);
@@ -218,81 +205,34 @@ void Visual::drawPoints() {
 	glBufferData(GL_ARRAY_BUFFER, colors.size() * sizeof(GLfloat), &colors[0], GL_STREAM_DRAW);
 
 	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), (GLvoid*)0);
-	glVertexAttribDivisor(1, 1);
 
-	// Position attribute
-	glGenBuffers(1, &positionVBO);
-	glEnableVertexAttribArray(2);
-	glBindBuffer(GL_ARRAY_BUFFER, positionVBO);
-	glBufferData(GL_ARRAY_BUFFER, positions.size() * sizeof(GLfloat), &positions[0], GL_STREAM_DRAW);
-
-	glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), (GLvoid*)0);
-	glVertexAttribDivisor(2, 1);
-
-	// texture index attribute
-	glGenBuffers(1, &textureIndexVBO);
-	glEnableVertexAttribArray(3);
-	glBindBuffer(GL_ARRAY_BUFFER, textureIndexVBO);
-	glBufferData(GL_ARRAY_BUFFER, textureIndices.size() * sizeof(GLfloat), &textureIndices[0], GL_STREAM_DRAW);
-
-	glVertexAttribPointer(3, 1, GL_FLOAT, GL_FALSE, 1 * sizeof(GLfloat), (GLvoid*)0);
-	glVertexAttribDivisor(3, 1);
-
-	// orientation attribute
-
-	glGenBuffers(1, &objectOrientationVBO);
-	glBindBuffer(GL_ARRAY_BUFFER, objectOrientationVBO);
-	glBufferData(GL_ARRAY_BUFFER, objectOrientations.size() * sizeof(glm::mat4), &objectOrientations[0], GL_STREAM_DRAW);
-
-	GLsizei vec4Size = sizeof(glm::vec4);
-	glEnableVertexAttribArray(4);
-	glVertexAttribPointer(4, 4, GL_FLOAT, GL_FALSE, 4 * sizeof(glm::vec4), (void*)0);
-	glVertexAttribDivisor(4, 1);
-
-	glEnableVertexAttribArray(5);
-	glVertexAttribPointer(5, 4, GL_FLOAT, GL_FALSE, 4 * sizeof(glm::vec4), (void*)(sizeof(glm::vec4)));
-	glVertexAttribDivisor(5, 1);
-
-	glEnableVertexAttribArray(6);
-	glVertexAttribPointer(6, 4, GL_FLOAT, GL_FALSE, 4 * sizeof(glm::vec4), (void*)(2 * sizeof(glm::vec4)));
-	glVertexAttribDivisor(6, 1);
-
-	glEnableVertexAttribArray(7);
-	glVertexAttribPointer(7, 4, GL_FLOAT, GL_FALSE, 4 * sizeof(glm::vec4), (void*)(3 * sizeof(glm::vec4)));
-	glVertexAttribDivisor(7, 1);
-
-	// texture
-	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D_ARRAY, textures);
-	glUniform1i(glGetUniformLocation(simulationObjectsShaderProgram, "textures"), 0);
-
-	// bind VAO and draw the elements
-	glBindVertexArray(VAO);
 	glPointSize(3.0);
-	glDrawArraysInstanced(GL_POINTS, 0, 3, numPoints);
-
-	// unbind VAO
+	glDrawArrays(GL_POINTS, 0, 3*simulation.getCurrentObjects().size());
 	glBindVertexArray(0);
 
-	// cleanup buffers
 	glDeleteVertexArrays(1, &VAO);
-	glDeleteBuffers(1, &sphereVBO);
-	glDeleteBuffers(1, &colorVBO);
 	glDeleteBuffers(1, &positionVBO);
-	glDeleteBuffers(1, &textureCoordinateVBO);
-	glDeleteBuffers(1, &textureIndexVBO);
-	glDeleteBuffers(1, &objectOrientationVBO);
-
-	glDeleteBuffers(1, &EBO);
+	glDeleteBuffers(1, &colorVBO);
 }
 
 void Visual::drawSpheres() {
+
+	glUseProgram(objectsShaderProgram);
+
+	// Get their uniform location
+	GLint viewLoc = glGetUniformLocation(objectsShaderProgram, "view");
+	GLint projLoc = glGetUniformLocation(objectsShaderProgram, "projection");
+
+	// Pass them to the shaders
+	glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
+	glUniformMatrix4fv(projLoc, 1, GL_FALSE, glm::value_ptr(projection));
+
 	std::vector<GLfloat> positions = {};
 	std::vector<GLfloat> colors = {};
 	std::vector<GLint> textureIndices = {};
-	std::vector<glm::mat4> objectOrientations = {};
+	std::vector<glm::mat4> instanceModels = {};
 	int numSpheres = 0;
-	GetVertexAttributeData(false, &positions, &colors, &textureIndices, &objectOrientations, &numSpheres);
+	GetVertexAttributeData(false, &positions, &colors, &textureIndices, &instanceModels, &numSpheres);
 
 	if (numSpheres == 0)
 		return;
@@ -337,10 +277,11 @@ void Visual::drawSpheres() {
 
 	// orientation attribute
 
-	glGenBuffers(1, &objectOrientationVBO);
-	glBindBuffer(GL_ARRAY_BUFFER, objectOrientationVBO);
-	glBufferData(GL_ARRAY_BUFFER, objectOrientations.size() * sizeof(glm::mat4), &objectOrientations[0], GL_STREAM_DRAW);
+	glGenBuffers(1, &instanceModelsVBO);
+	glBindBuffer(GL_ARRAY_BUFFER, instanceModelsVBO);
+	glBufferData(GL_ARRAY_BUFFER, instanceModels.size() * sizeof(glm::mat4), &instanceModels[0], GL_STREAM_DRAW);
 
+	//the largest single type we can pass to the shader is a vec4, so pass four of them to get a mat4
 	GLsizei vec4Size = sizeof(glm::vec4);
 	glEnableVertexAttribArray(4);
 	glVertexAttribPointer(4, 4, GL_FLOAT, GL_FALSE, 4 * sizeof(glm::vec4), (void*)0);
@@ -361,15 +302,14 @@ void Visual::drawSpheres() {
 	// textures
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_CUBE_MAP_ARRAY, cubemap);
-	glUniform1i(glGetUniformLocation(simulationObjectsShaderProgram, "cubemap"), 0);
+	glUniform1i(glGetUniformLocation(objectsShaderProgram, "cubemap"), 0);
 
 	// element buffer 
 	glGenBuffers(1, &EBO);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sphere.indices.size() * sizeof(GLfloat), &sphere.indices[0], GL_STREAM_DRAW);
 
-	// bind VAO and draw the elements
-	glBindVertexArray(VAO);
+	// draw the elements
 	glDrawElementsInstanced(GL_TRIANGLES, sphere.indices.size(), GL_UNSIGNED_INT, 0, numSpheres);
 
 	// unbind VAO
@@ -382,7 +322,7 @@ void Visual::drawSpheres() {
 	glDeleteBuffers(1, &positionVBO);
 	glDeleteBuffers(1, &textureCoordinateVBO);
 	glDeleteBuffers(1, &textureIndexVBO);
-	glDeleteBuffers(1, &objectOrientationVBO);
+	glDeleteBuffers(1, &instanceModelsVBO);
 
 	glDeleteBuffers(1, &EBO);
 }
@@ -417,11 +357,11 @@ void Visual::drawLines() {
 	if (simulation.computedData.size() < 2)
 		return;
 
-	glUseProgram(simulationPathsShaderProgram);
+	glUseProgram(pathsShaderProgram);
 	// Get uniform location
-	GLint modelLoc = glGetUniformLocation(simulationPathsShaderProgram, "model");
-	GLint viewLoc = glGetUniformLocation(simulationPathsShaderProgram, "view");
-	GLint projLoc = glGetUniformLocation(simulationPathsShaderProgram, "projection");
+	GLint modelLoc = glGetUniformLocation(pathsShaderProgram, "model");
+	GLint viewLoc = glGetUniformLocation(pathsShaderProgram, "view");
+	GLint projLoc = glGetUniformLocation(pathsShaderProgram, "projection");
 
 	// Pass them to the shaders
 	glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
@@ -502,7 +442,8 @@ void Visual::update()
 
 	setView();
 
-	drawObjects();
+	drawSpheres();
+	drawPoints();
 	drawLines();
 
 	ImGui::Render();

@@ -65,8 +65,9 @@ private:
 	void drawSpheres();
 	void drawLines();
 
-	GLuint simulationObjectsShaderProgram;
-	GLuint simulationPathsShaderProgram;
+	GLuint pointsShaderProgram;
+	GLuint objectsShaderProgram;
+	GLuint pathsShaderProgram;
 
 	//input are coordinates on a sphere
 	float GetPixelDiameter(glm::vec4 surfacePoint, glm::vec4 centerPoint);
@@ -77,7 +78,7 @@ private:
 
 	GLuint cubemap;
 	GLuint textures;
-	GLuint objectOrientationVBO;
+	GLuint instanceModelsVBO;
 	GLuint textureCoordinateVBO;
 	GLuint textureIndexVBO;
 	GLuint sphereVBO;

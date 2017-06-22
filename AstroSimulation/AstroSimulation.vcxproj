@@ -156,6 +156,8 @@
     <None Include="ObjectVertex.shader" />
     <None Include="PathFragment.shader" />
     <None Include="PathVertex.shader" />
+    <None Include="PointFragment.shader" />
+    <None Include="PointVertex.shader" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
