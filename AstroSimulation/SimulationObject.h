@@ -9,7 +9,7 @@
 class SimulationObject
 {
 public:
-	SimulationObject(std::string Name, float Mass, float Position[3], float Velocity[3]);
+	SimulationObject(std::string Name, float Mass, float Position[3], float Velocity[3], float Radius);
 	~SimulationObject();
 	SimulationObject() {};
 
@@ -19,8 +19,9 @@ public:
 	void SetMass(float newMass);
 
 	std::string name;
+	ValueWithUnits<UnitType::Distance> radius;
 	ValueWithUnits<UnitType::Mass> mass;
-	ValueWithUnits3<UnitType::Position> position;
+	ValueWithUnits3<UnitType::Distance> position;
 	ValueWithUnits3<UnitType::Velocity> velocity;
 
 private:

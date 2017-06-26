@@ -475,7 +475,7 @@ bool UnitCombo(std::string id, ValueWithUnits<type>* value) {
 	int units = value->unitIndex;
 	switch (type)
 	{
-	case UnitType::Position:
+	case UnitType::Distance:
 		changed = ImGui::Combo(id.c_str(), &units, value->unitData.positionUnits, IM_ARRAYSIZE(value->unitData.positionUnits));
 		break;
 	case UnitType::Velocity:
@@ -500,7 +500,7 @@ bool UnitCombo3(std::string id, ValueWithUnits3<type>* value) {
 	int units = value->unitIndex;
 	switch (type)
 	{
-	case UnitType::Position:
+	case UnitType::Distance:
 		changed = ImGui::Combo(id.c_str(), &units, value->unitData.positionUnits, IM_ARRAYSIZE(value->unitData.positionUnits));
 		break;
 	case UnitType::Velocity:
@@ -721,7 +721,7 @@ void ShowMainUi(Simulation* simulation, std::vector<std::vector<GLfloat> > * pat
 				bool positionChanged = ImGui::InputFloat3(("##Position " + currentObject.name).c_str(), &simulation->computedData[simulation->dataIndex][i].position.value[0]);
 				
 				ImGui::SameLine(375.0f); ImGui::PushItemWidth(120);
-				bool positionUnitsChanged = UnitCombo3<UnitType::Position>("##PositionUnits" + currentObject.name, &simulation->computedData[simulation->dataIndex][i].position);
+				bool positionUnitsChanged = UnitCombo3<UnitType::Distance>("##PositionUnits" + currentObject.name, &simulation->computedData[simulation->dataIndex][i].position);
 				ImGui::PopItemWidth();
 
 				ImGui::AlignFirstTextHeightToWidgets();

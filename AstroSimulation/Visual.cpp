@@ -142,8 +142,13 @@ void Visual::GetVertexAttributeData(bool drawAsPoint, std::vector<GLfloat>* posi
 			objects[i].position.GetBaseValue(2) - offsets[2]
 		};
 
-		glm::vec4 centerPoint = glm::vec4(position, 1.0);
-		glm::vec4 surfacePoint = glm::vec4(position + glm::vec3(sphere.vertices[0], sphere.vertices[1], sphere.vertices[2]), 1.0);
+		float r = objects[i].radius.GetBaseValue();
+
+		glm::mat4 instanceModel = glm::mat4();
+		instanceModel = glm::scale(instanceModel, glm::vec3(r, r, r));
+
+		glm::vec4 centerPoint = instanceModel * glm::vec4(position, 1.0);
+		glm::vec4 surfacePoint = instanceModel * glm::vec4(position + glm::vec3(sphere.vertices[0], sphere.vertices[1], sphere.vertices[2]), 1.0);
 		float diameter = GetPixelDiameter(surfacePoint, centerPoint);
 
 		if ((drawAsPoint && diameter < 3) || (!drawAsPoint && diameter >= 3)) {
@@ -157,10 +162,8 @@ void Visual::GetVertexAttributeData(bool drawAsPoint, std::vector<GLfloat>* posi
 			if (!drawAsPoint) {
 				textureIndices->push_back(drawAsPoint ? -1 : simulation.objectSettings[i].textureIndex);
 
-				glm::mat4 orientation = glm::mat4();
-				if (!drawAsPoint)
-					orientation = glm::rotate(orientation, glm::radians(270.0f), glm::vec3(1.f, 0.f, 0.f));
-				instanceModels->push_back(orientation);
+				instanceModel = glm::rotate(instanceModel, glm::radians(270.0f), glm::vec3(1.f, 0.f, 0.f));
+				instanceModels->push_back(instanceModel);
 			}
 			
 			(*count)++;

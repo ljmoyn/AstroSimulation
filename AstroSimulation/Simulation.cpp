@@ -32,13 +32,18 @@ void Simulation::FromXml(Simulation *sim, std::string filename)
 		float Vz = currentObjectNode.node().child("Velocity").child("Vz").text().as_float();
 		float velocity[3] = { Vx, Vy, Vz };
 
+		float radius = currentObjectNode.node().child("Radius").text().as_float();
+		//don't allow invalid data. if radius data not included at all, pugixml defaults to 0. 
+		if (radius <= 0)
+			radius = 1.0;
+
 		bool showHistory = currentObjectNode.node().child("Settings").child("ShowHistory").text().as_bool();
 		std::string displayType = currentObjectNode.node().child("Settings").child("DisplayType").text().as_string();
 
 		std::string colorString = currentObjectNode.node().child("Settings").child("Color").text().as_string();
 		int textureIndex = 0;
 		ObjectSettings settings(showHistory, displayType, colorString, textureIndex);
-		SimulationObject currentObject(name, mass, position, velocity);
+		SimulationObject currentObject(name, mass, position, velocity, radius);
 
 		objects.push_back(currentObject);
 		sim->objectSettings.push_back(settings);

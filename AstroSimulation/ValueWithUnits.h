@@ -3,7 +3,7 @@
 
 #include <vector>
 
-enum class UnitType { Time, Position, Velocity, Mass };
+enum class UnitType { Time, Distance, Velocity, Mass };
 
 struct UnitData {
 	//Conversions to base units, which are used in all algorithmic calculations: Years, Kg, Gigameters 
@@ -55,7 +55,7 @@ public:
 	{
 		switch (type)
 		{
-		case UnitType::Position:
+		case UnitType::Distance:
 			return value * unitData.positionConversions[unitIndex];
 		case UnitType::Velocity:
 			return value * unitData.velocityConversions[unitIndex];
@@ -72,7 +72,7 @@ public:
 
 		switch (type)
 		{
-		case UnitType::Position:
+		case UnitType::Distance:
 			unitIndex = 2;
 			break;
 		case UnitType::Velocity:
@@ -92,7 +92,7 @@ public:
 		SetBaseUnits();
 		switch (type)
 		{
-		case UnitType::Position:
+		case UnitType::Distance:
 			value /= unitData.positionConversions[i];
 			break;
 		case UnitType::Velocity:
@@ -138,7 +138,7 @@ public:
 		for (int i = 0; i < 3; i++) {
 			switch (type)
 			{
-			case UnitType::Position:
+			case UnitType::Distance:
 				result[i] = value[i] * unitData.positionConversions[unitIndex];
 				break;
 			case UnitType::Velocity:
@@ -158,7 +158,7 @@ public:
 	{
 		switch (type)
 		{
-		case UnitType::Position:
+		case UnitType::Distance:
 			return value[i] * unitData.positionConversions[unitIndex];
 		case UnitType::Velocity:
 			return value[i] * unitData.velocityConversions[unitIndex];
@@ -175,7 +175,7 @@ public:
 
 		switch (type)
 		{
-		case UnitType::Position:
+		case UnitType::Distance:
 			unitIndex = 2;
 			break;
 		case UnitType::Velocity:
@@ -196,7 +196,7 @@ public:
 		for (int j = 0; j < 3; j++) {
 			switch (type)
 			{
-			case UnitType::Position:
+			case UnitType::Distance:
 				value[j] /= unitData.positionConversions[i];
 				break;
 			case UnitType::Velocity:
