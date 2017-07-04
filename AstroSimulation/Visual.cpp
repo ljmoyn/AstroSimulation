@@ -40,8 +40,11 @@ Visual::Visual(std::string simulationSource)
 	// barely used. Should probably refactor
 	camera = Camera();
 
+	imguiStatus.textureFolders = imguiStatus.GetAllFoldersInFolder("../cubemaps/*");
+	LoadTextures();
+
 	// get simulation data
-	Simulation::FromXml(&simulation, simulationSource);
+	Simulation::FromXml(&simulation, simulationSource, imguiStatus.textureFolders);
 
 	for (int i = 0; i < simulation.getCurrentObjects().size(); i++)
 		paths.push_back({});
@@ -51,46 +54,6 @@ Visual::Visual(std::string simulationSource)
 	zTranslate = -1000000.0;
 	setView();
 	model = glm::mat4();
-
-	std::vector<const GLchar*> faces;
-
-	//source: http://planetpixelemporium.com/earth.html
-	//converted from equirectangular to cubemap using this (blender) 
-	//https://developers.theta360.com/en/forums/viewtopic.php?f=4&t=1981
-	faces.push_back("Cubemaps/earthRight.png");
-	faces.push_back("Cubemaps/earthLeft.png");
-	faces.push_back("Cubemaps/earthTop.png");
-	faces.push_back("Cubemaps/earthBottom.png");
-	faces.push_back("Cubemaps/earthBack.png");
-	faces.push_back("Cubemaps/earthFront.png");
-
-	glGenTextures(1, &cubemap);
-	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_CUBE_MAP_ARRAY, cubemap);
-
-	glTexImage3D(GL_TEXTURE_CUBE_MAP_ARRAY,
-		0,                // level
-		GL_RGB8,         // Internal format
-		1024, 1024, 6, // width,height,depth (must be multiple of 6, since each cubemap is 6 images)
-		0,
-		GL_RGB,          // format
-		GL_UNSIGNED_BYTE, // type
-		0);               // pointer to data
-
-	int width, height;
-	unsigned char* image;
-	for (GLuint i = 0; i < faces.size(); i++)
-	{
-		image = SOIL_load_image(faces[i], &width, &height, 0, SOIL_LOAD_RGB);
-		glTexSubImage3D(GL_TEXTURE_CUBE_MAP_ARRAY, 0, 0, 0, i, width, height, 1, GL_RGB, GL_UNSIGNED_BYTE, image);
-
-	}
-
-	glTexParameteri(GL_TEXTURE_CUBE_MAP_ARRAY, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_CUBE_MAP_ARRAY, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_CUBE_MAP_ARRAY, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_CUBE_MAP_ARRAY, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_CUBE_MAP_ARRAY, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
 }
 
 Visual::~Visual()
@@ -614,4 +577,52 @@ void Visual::window_resize_callback(GLFWwindow* _window, int x, int y)
 	width = x;
 	height = y;
 	glViewport(0, 0, width, height);
+}
+
+void Visual::LoadTextures()
+{
+	std::vector<std::string> faces;
+
+	for (int i = 0; i < imguiStatus.textureFolders.size(); i++) {
+		std::string folder = imguiStatus.textureFolders[i];
+		//source: http://planetpixelemporium.com/earth.html
+		//converted from equirectangular to cubemap using this (blender) 
+		//https://developers.theta360.com/en/forums/viewtopic.php?f=4&t=1981
+		faces.push_back("../cubemaps/" + folder + "/right.png");
+		faces.push_back("../cubemaps/" + folder + "/left.png");
+		faces.push_back("../cubemaps/" + folder + "/top.png");
+		faces.push_back("../cubemaps/" + folder + "/bottom.png");
+		faces.push_back("../cubemaps/" + folder + "/back.png");
+		faces.push_back("../cubemaps/" + folder + "/front.png");
+	}
+	glGenTextures(1, &cubemap);
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_CUBE_MAP_ARRAY, cubemap);
+
+	glTexImage3D(GL_TEXTURE_CUBE_MAP_ARRAY,
+		0,                // level
+		GL_RGB8,         // Internal format
+		1024, 1024, faces.size(), // width,height,depth (must be multiple of 6, since each cubemap is 6 images)
+		0,
+		GL_RGB,          // format
+		GL_UNSIGNED_BYTE, // type
+		0);               // pointer to data
+
+	int width, height;
+	unsigned char* image;
+	for (GLuint i = 0; i < faces.size(); i++)
+	{
+		//TODO: reduce load time. It's pretty awful currently.
+		//https://gamedev.stackexchange.com/questions/126561/long-loading-times-on-large-png-file-using-c-opengl-soil
+		image = SOIL_load_image(faces[i].c_str(), &width, &height, 0, SOIL_LOAD_RGB);
+		glTexSubImage3D(GL_TEXTURE_CUBE_MAP_ARRAY, 0, 0, 0, i, width, height, 1, GL_RGB, GL_UNSIGNED_BYTE, image);
+
+	}
+
+	glTexParameteri(GL_TEXTURE_CUBE_MAP_ARRAY, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP_ARRAY, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP_ARRAY, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP_ARRAY, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP_ARRAY, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+
 }
