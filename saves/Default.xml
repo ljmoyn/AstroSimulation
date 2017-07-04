@@ -21,8 +21,9 @@
 					<ShowHistory>True</ShowHistory>
 					<DisplayType>Point</DisplayType>
 					<Color>1.0, 1.0, 0.0</Color>
+					<Texture>sun</Texture>
 				</Settings>
-				<Radius>.6957</Radius>				
+				<Radius>.6957</Radius>
 			</Object>
 			<Object>
 				<Name>Mercury</Name>
@@ -41,6 +42,7 @@
 					<ShowHistory>True</ShowHistory>
 					<DisplayType>Point</DisplayType>
 					<Color>0.5333333333333333, 0.4549019607843137, 0.3411764705882353</Color>
+					<Texture>mercury</Texture>					
 				</Settings>
 				<Radius>.0024397</Radius>
 			</Object>
@@ -61,6 +63,7 @@
 					<ShowHistory>True</ShowHistory>
 					<DisplayType>Point</DisplayType>
 					<Color>1.0, 0.5529411764705883, 0.18823529411764706</Color>
+					<Texture>venus</Texture>
 				</Settings>
 				<Radius>.0060518</Radius>
 			</Object>
@@ -81,6 +84,7 @@
 					<ShowHistory>True</ShowHistory>
 					<DisplayType>Point</DisplayType>
 					<Color>0.2549019607843137, 1.0, 0.20392156862745098</Color>
+					<Texture>earth</Texture>
 				</Settings>
 				<Radius>.00637</Radius>
 			</Object>
@@ -101,6 +105,7 @@
 					<ShowHistory>True</ShowHistory>
 					<DisplayType>Point</DisplayType>
 					<Color>1.0, 0.0, 0.0</Color>
+					<Texture>mars</Texture>
 				</Settings>
 				<Radius>.0033895</Radius>
 			</Object>
@@ -121,6 +126,7 @@
 					<ShowHistory>False</ShowHistory>
 					<DisplayType>Point</DisplayType>
 					<Color>1.0, 1.0, 1.0</Color>
+					<Texture>moon</Texture>
 				</Settings>
 				<Radius>.0017371</Radius>
 			</Object>
@@ -141,6 +147,7 @@
 					<ShowHistory>True</ShowHistory>
 					<DisplayType>Point</DisplayType>
 					<Color>1.0, 0.396078431372549, 0.2901960784313726</Color>
+					<Texture>jupiter</Texture>
 				</Settings>
 				<Radius>.069911</Radius>
 			</Object>
@@ -241,6 +248,7 @@
 					<ShowHistory>True</ShowHistory>
 					<DisplayType>Point</DisplayType>
 					<Color>1.0, 0.7803921568627451, 0.6313725490196078</Color>
+					<Texture>saturn</Texture>
 				</Settings>
 				<Radius>.058232</Radius>
 			</Object>
@@ -261,6 +269,7 @@
 					<ShowHistory>True</ShowHistory>
 					<DisplayType>Point</DisplayType>
 					<Color>0.4235294117647059, 0.403921568627451, 1.0</Color>
+					<Texture>uranus</Texture>
 				</Settings>
 				<Radius>.025559</Radius>
 			</Object>
@@ -281,6 +290,7 @@
 					<ShowHistory>True</ShowHistory>
 					<DisplayType>Point</DisplayType>
 					<Color>0.5568627450980392, 0.8470588235294118, 1.0</Color>
+					<Texture>neptune</Texture>
 				</Settings>
 				<Radius>.024622</Radius>
 			</Object>
@@ -301,6 +311,7 @@
 					<ShowHistory>True</ShowHistory>
 					<DisplayType>Point</DisplayType>
 					<Color>0.7333333333333333, 0.7137254901960784, 0.7647058823529411</Color>
+					<Texture>pluto</Texture>
 				</Settings>
 				<Radius>.0011899</Radius>
 			</Object>

@@ -27,7 +27,7 @@ public:
 	void velocityVerlet(float dt);
 	std::vector<std::vector<float>> getAccelerations(std::vector<SimulationObject> objects = {});
 	std::vector<SimulationObject> getCurrentObjects();
-	static void FromXml(Simulation* simulation, std::string filename);
+	static void FromXml(Simulation* simulation, std::string filename, std::vector<std::string> textureFolders);
 	static void ToXml(Simulation simulation, std::string filename);
 
 	static std::vector<std::map<std::string, int> > ConvertObjectsToBaseUnits(std::vector<SimulationObject>* objects);

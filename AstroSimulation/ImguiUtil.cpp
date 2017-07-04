@@ -579,7 +579,7 @@ void LoadPopup(Simulation* simulation, ImguiStatus* imguiStatus) {
 			for (int i = 0; i < imguiStatus->selected.size(); i++)
 			{
 				if (imguiStatus->selected[i])
-					Simulation::FromXml(simulation, "../saves/" + imguiStatus->saveFiles[i]);
+					Simulation::FromXml(simulation, "../saves/" + imguiStatus->saveFiles[i], imguiStatus->textureFolders);
 			}
 
 			imguiStatus->showLoadPopup = false;

@@ -8,7 +8,7 @@ Simulation::~Simulation()
 {
 }
 
-void Simulation::FromXml(Simulation *sim, std::string filename)
+void Simulation::FromXml(Simulation *sim, std::string filename, std::vector<std::string> textureFolders)
 {
 	sim->playbackSpeed = 1;
 
@@ -41,7 +41,17 @@ void Simulation::FromXml(Simulation *sim, std::string filename)
 		std::string displayType = currentObjectNode.node().child("Settings").child("DisplayType").text().as_string();
 
 		std::string colorString = currentObjectNode.node().child("Settings").child("Color").text().as_string();
-		int textureIndex = 0;
+		std::string texture = currentObjectNode.node().child("Settings").child("Texture").text().as_string();
+		int textureIndex = -1;
+		if (texture != "") {
+			for (int i = 0; i < textureFolders.size(); i++) {
+				if (textureFolders[i] == texture) {
+					textureIndex = i;
+					break;
+				}
+			}
+		}
+
 		ObjectSettings settings(showHistory, displayType, colorString, textureIndex);
 		SimulationObject currentObject(name, mass, position, velocity, radius);
 

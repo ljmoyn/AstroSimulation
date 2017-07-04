@@ -60,6 +60,8 @@ public:
 	Camera camera;
 	Sphere sphere = Sphere();
 private:
+
+	void LoadTextures();
 	void drawPoints();
 	void drawSpheres();
 	void drawLines();

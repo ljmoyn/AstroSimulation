@@ -40,10 +40,13 @@ struct ImguiStatus {
 	bool showSavePopup = false;
 	std::vector<std::string> saveFiles;
 	std::vector<bool> selected;
+	std::vector<std::string> textureFolders;
 
 	bool showTopLeftOverlay = true;
 
 	//http://stackoverflow.com/questions/612097/how-can-i-get-the-list-of-files-in-a-directory-using-c-or-c
+	//https://stackoverflow.com/questions/2239872/how-to-get-list-of-folders-in-this-folder
+	//https://msdn.microsoft.com/en-us/library/aa365200(VS.85).aspx
 	//windows specific
 	std::vector<std::string> GetAllFilesInFolder(std::string folderPath)
 	{
@@ -56,6 +59,23 @@ struct ImguiStatus {
 				// read all (real) files in current folder
 				// , delete '!' read other 2 default folder . and ..
 				if (!(fd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)) {
+					names.push_back(fd.cFileName);
+				}
+			} while (::FindNextFile(hFind, &fd));
+			::FindClose(hFind);
+		}
+		return names;
+	}
+
+	std::vector<std::string> GetAllFoldersInFolder(std::string folderPath)
+	{
+		std::vector<std::string> names;
+		std::string search_path = folderPath;
+		WIN32_FIND_DATA fd;
+		HANDLE hFind = ::FindFirstFile(search_path.c_str(), &fd);
+		if (hFind != INVALID_HANDLE_VALUE) {
+			do {
+				if ((fd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) && (std::string)(fd.cFileName) != "." && (std::string)(fd.cFileName) != "..") {
 					names.push_back(fd.cFileName);
 				}
 			} while (::FindNextFile(hFind, &fd));
