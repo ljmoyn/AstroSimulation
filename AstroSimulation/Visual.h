@@ -62,6 +62,7 @@ public:
 private:
 
 	void LoadTextures();
+	unsigned char* LoadDDS(std::string imagePath, int * format, int * mipmapCount, int * width, int * height, int * imageSize);
 	void drawPoints();
 	void drawSpheres();
 	void drawLines();
@@ -101,6 +102,6 @@ private:
 	GLfloat yTranslate;
 	GLfloat zTranslate;
 
-
+	void GetGlError();
 };
 #endif

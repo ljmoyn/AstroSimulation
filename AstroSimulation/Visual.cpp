@@ -585,44 +585,142 @@ void Visual::LoadTextures()
 
 	for (int i = 0; i < imguiStatus.textureFolders.size(); i++) {
 		std::string folder = imguiStatus.textureFolders[i];
+
 		//source: http://planetpixelemporium.com/earth.html
 		//converted from equirectangular to cubemap using this (blender) 
 		//https://developers.theta360.com/en/forums/viewtopic.php?f=4&t=1981
-		faces.push_back("../cubemaps/" + folder + "/right.png");
-		faces.push_back("../cubemaps/" + folder + "/left.png");
-		faces.push_back("../cubemaps/" + folder + "/top.png");
-		faces.push_back("../cubemaps/" + folder + "/bottom.png");
-		faces.push_back("../cubemaps/" + folder + "/back.png");
-		faces.push_back("../cubemaps/" + folder + "/front.png");
+		faces.push_back("../cubemaps/" + folder + "/right_PNG_DXT1_1.dds");
+		faces.push_back("../cubemaps/" + folder + "/left_PNG_DXT1_1.dds");
+		faces.push_back("../cubemaps/" + folder + "/top_PNG_DXT1_1.dds");
+		faces.push_back("../cubemaps/" + folder + "/bottom_PNG_DXT1_1.dds");
+		faces.push_back("../cubemaps/" + folder + "/back_PNG_DXT1_1.dds");
+		faces.push_back("../cubemaps/" + folder + "/front_PNG_DXT1_1.dds");
 	}
 	glGenTextures(1, &cubemap);
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_CUBE_MAP_ARRAY, cubemap);
 
-	glTexImage3D(GL_TEXTURE_CUBE_MAP_ARRAY,
-		0,                // level
-		GL_RGB8,         // Internal format
-		1024, 1024, faces.size(), // width,height,depth (must be multiple of 6, since each cubemap is 6 images)
-		0,
-		GL_RGB,          // format
-		GL_UNSIGNED_BYTE, // type
-		0);               // pointer to data
-
-	int width, height;
-	unsigned char* image;
+	int width, height, mipmapCount, format, imageSize;
+	unsigned char * image;
 	for (GLuint i = 0; i < faces.size(); i++)
 	{
-		//TODO: reduce load time. It's pretty awful currently.
-		//https://gamedev.stackexchange.com/questions/126561/long-loading-times-on-large-png-file-using-c-opengl-soil
-		image = SOIL_load_image(faces[i].c_str(), &width, &height, 0, SOIL_LOAD_RGB);
-		glTexSubImage3D(GL_TEXTURE_CUBE_MAP_ARRAY, 0, 0, 0, i, width, height, 1, GL_RGB, GL_UNSIGNED_BYTE, image);
+		image = LoadDDS(faces[i], &format, &mipmapCount, &width, &height, &imageSize);
 
+		// format == GL_COMPRESSED_RGBA_S3TC_DXT1_EXT in my case
+		if (i == 0) {
+			glCompressedTexImage3D(GL_TEXTURE_CUBE_MAP_ARRAY,
+				0,                           // level
+				format,                      // Internal format
+				width, height, faces.size(), // width,height,depth
+				0,						     //border
+				faces.size() * imageSize,    // imageSize
+				0);                          // pointer to data
+
+			GetGlError();
+		}
+
+		unsigned int blockSize = (format == GL_COMPRESSED_RGBA_S3TC_DXT1_EXT) ? 8 : 16;
+		unsigned int offset = 0;
+
+		/* load the mipmaps */
+		for (unsigned int level = 0; level < mipmapCount && (width || height); ++level)
+		{
+			int size = ((width + 3) / 4)*((height + 3) / 4)*blockSize;
+			glCompressedTexSubImage3D(GL_TEXTURE_CUBE_MAP_ARRAY, level, 0, 0, i, width, height, 1, format, size, image + offset);
+
+			GetGlError();
+
+			offset += size;
+			width /= 2;
+			height /= 2;
+		}
+		free(image);
 	}
 
 	glTexParameteri(GL_TEXTURE_CUBE_MAP_ARRAY, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_CUBE_MAP_ARRAY, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP_ARRAY, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_NEAREST);
 	glTexParameteri(GL_TEXTURE_CUBE_MAP_ARRAY, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_CUBE_MAP_ARRAY, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_CUBE_MAP_ARRAY, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+}
 
+
+//http://www.opengl-tutorial.org/beginners-tutorials/tutorial-5-a-textured-cube/
+#define FOURCC_DXT1 0x31545844 // Equivalent to "DXT1" in ASCII
+#define FOURCC_DXT3 0x33545844 // Equivalent to "DXT3" in ASCII
+#define FOURCC_DXT5 0x35545844 // Equivalent to "DXT5" in ASCII
+unsigned char * Visual::LoadDDS(std::string imagepath, int * format, int * mipmapCount, int * width, int * height, int * imageSize)
+{
+	unsigned char header[124];
+
+	FILE *fp;
+
+	/* try to open the file */
+	fopen_s(&fp, imagepath.c_str(), "rb");
+	if (fp == NULL)
+		return 0;
+
+	/* verify the type of file */
+	char filecode[4];
+	fread(filecode, 1, 4, fp);
+	if (strncmp(filecode, "DDS ", 4) != 0) {
+		fclose(fp);
+		return 0;
+	}
+
+	/* get the surface desc */
+	fread(&header, 124, 1, fp);
+
+	*height = *(unsigned int*)&(header[8]);
+	*width = *(unsigned int*)&(header[12]);
+	*mipmapCount = *(unsigned int*)&(header[24]);
+
+	unsigned int linearSize = *(unsigned int*)&(header[16]);
+	unsigned int fourCC = *(unsigned int*)&(header[80]);
+
+	unsigned char * buffer;
+	/* how big is it going to be including all mipmaps? */
+	*imageSize = *mipmapCount > 1 ? linearSize * 2 : linearSize;
+	buffer = (unsigned char*)malloc(*imageSize * sizeof(unsigned char));
+	fread(buffer, 1, *imageSize, fp);
+	/* close the file pointer */
+	fclose(fp);
+
+	switch (fourCC)
+	{
+	case FOURCC_DXT1:
+		*format = GL_COMPRESSED_RGBA_S3TC_DXT1_EXT;
+		break;
+	case FOURCC_DXT3:
+		*format = GL_COMPRESSED_RGBA_S3TC_DXT3_EXT;
+		break;
+	case FOURCC_DXT5:
+		*format = GL_COMPRESSED_RGBA_S3TC_DXT5_EXT;
+		break;
+	default:
+		free(buffer);
+		return 0;
+	}
+
+	return buffer;
+}
+
+void Visual::GetGlError()
+{
+	GLenum errorCode;
+	while ((errorCode = glGetError()) != GL_NO_ERROR)
+	{
+		std::string error;
+		switch (errorCode)
+		{
+		case GL_INVALID_ENUM:                  error = "INVALID_ENUM"; break;
+		case GL_INVALID_VALUE:                 error = "INVALID_VALUE"; break;
+		case GL_INVALID_OPERATION:             error = "INVALID_OPERATION"; break;
+		case GL_STACK_OVERFLOW:                error = "STACK_OVERFLOW"; break;
+		case GL_STACK_UNDERFLOW:               error = "STACK_UNDERFLOW"; break;
+		case GL_OUT_OF_MEMORY:                 error = "OUT_OF_MEMORY"; break;
+		case GL_INVALID_FRAMEBUFFER_OPERATION: error = "INVALID_FRAMEBUFFER_OPERATION"; break;
+		}
+		std::cout << error << std::endl;
+	}
 }
