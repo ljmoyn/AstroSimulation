@@ -62,7 +62,8 @@ public:
 private:
 
 	void LoadTextures();
-	unsigned char* LoadDDS(std::string imagePath, int * format, int * mipmapCount, int * width, int * height, int * imageSize);
+	unsigned char* LoadDDS(std::string imagePath, int * format, int * mipmapCount, int * width, int * height);
+
 	void drawPoints();
 	void drawSpheres();
 	void drawLines();
@@ -102,6 +103,7 @@ private:
 	GLfloat yTranslate;
 	GLfloat zTranslate;
 
-	void GetGlError();
+	void CheckGlError(std::string message = "");
+	//static void APIENTRY Visual::glDebugOutput(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar *message, const void *userParam);
 };
 #endif

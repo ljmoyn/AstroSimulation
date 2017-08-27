@@ -7,6 +7,7 @@ Visual::Visual(std::string simulationSource)
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 5);
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+	//glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GL_TRUE);
 
 	// Create a GLFWwindow and setup viewport
 	const GLFWvidmode * mode = glfwGetVideoMode(glfwGetPrimaryMonitor());
@@ -39,7 +40,15 @@ Visual::Visual(std::string simulationSource)
 
 	// barely used. Should probably refactor
 	camera = Camera();
+	//GLint flags; glGetIntegerv(GL_CONTEXT_FLAGS, &flags);
+	//if (flags & GL_CONTEXT_FLAG_DEBUG_BIT)
+	//{
+	//	glEnable(GL_DEBUG_OUTPUT);
+	//	glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
 
+	//	glDebugMessageCallback(glDebugOutput, nullptr);
+	//	glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, nullptr, GL_TRUE);
+	//}
 	imguiStatus.textureFolders = imguiStatus.GetAllFoldersInFolder("../cubemaps/*");
 	LoadTextures();
 
@@ -596,49 +605,48 @@ void Visual::LoadTextures()
 		faces.push_back("../cubemaps/" + folder + "/back_PNG_DXT1_1.dds");
 		faces.push_back("../cubemaps/" + folder + "/front_PNG_DXT1_1.dds");
 	}
+
 	glGenTextures(1, &cubemap);
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_CUBE_MAP_ARRAY, cubemap);
 
-	int width, height, mipmapCount, format, imageSize;
+	int width, height, mipmapCount, format;
 	unsigned char * image;
 	for (GLuint i = 0; i < faces.size(); i++)
 	{
-		image = LoadDDS(faces[i], &format, &mipmapCount, &width, &height, &imageSize);
-
-		// format == GL_COMPRESSED_RGBA_S3TC_DXT1_EXT in my case
-		if (i == 0) {
-			glCompressedTexImage3D(GL_TEXTURE_CUBE_MAP_ARRAY,
-				0,                           // level
-				format,                      // Internal format
-				width, height, faces.size(), // width,height,depth
-				0,						     //border
-				faces.size() * imageSize,    // imageSize
-				0);                          // pointer to data
-
-			GetGlError();
-		}
+		image = LoadDDS(faces[i], &format, &mipmapCount, &width, &height);
 
 		unsigned int blockSize = (format == GL_COMPRESSED_RGBA_S3TC_DXT1_EXT) ? 8 : 16;
 		unsigned int offset = 0;
 
 		/* load the mipmaps */
-		for (unsigned int level = 0; level < mipmapCount && (width || height); ++level)
+		for (unsigned int level = 0; level < mipmapCount + 1 && (width || height); level++)
 		{
 			int size = ((width + 3) / 4)*((height + 3) / 4)*blockSize;
-			glCompressedTexSubImage3D(GL_TEXTURE_CUBE_MAP_ARRAY, level, 0, 0, i, width, height, 1, format, size, image + offset);
 
-			GetGlError();
+			//allocate memory for each level
+			if (i == 0) {
+				glCompressedTexImage3D(GL_TEXTURE_CUBE_MAP_ARRAY,
+					level,                       // level
+					format,                      // Internal format
+					width, height, faces.size(), // width,height,depth
+					0,						     // border
+					faces.size() * size,         // imageSize
+					0);                          // pointer to data
+			}
+
+			glCompressedTexSubImage3D(GL_TEXTURE_CUBE_MAP_ARRAY, level, 0, 0, i, width, height, 1, format, size, image + offset);
 
 			offset += size;
 			width /= 2;
 			height /= 2;
 		}
+
 		free(image);
 	}
 
 	glTexParameteri(GL_TEXTURE_CUBE_MAP_ARRAY, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_CUBE_MAP_ARRAY, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_NEAREST);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP_ARRAY, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
 	glTexParameteri(GL_TEXTURE_CUBE_MAP_ARRAY, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_CUBE_MAP_ARRAY, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_CUBE_MAP_ARRAY, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
@@ -649,7 +657,7 @@ void Visual::LoadTextures()
 #define FOURCC_DXT1 0x31545844 // Equivalent to "DXT1" in ASCII
 #define FOURCC_DXT3 0x33545844 // Equivalent to "DXT3" in ASCII
 #define FOURCC_DXT5 0x35545844 // Equivalent to "DXT5" in ASCII
-unsigned char * Visual::LoadDDS(std::string imagepath, int * format, int * mipmapCount, int * width, int * height, int * imageSize)
+unsigned char * Visual::LoadDDS(std::string imagepath, int * format, int * mipmapCount, int * width, int * height)
 {
 	unsigned char header[124];
 
@@ -675,14 +683,16 @@ unsigned char * Visual::LoadDDS(std::string imagepath, int * format, int * mipma
 	*width = *(unsigned int*)&(header[12]);
 	*mipmapCount = *(unsigned int*)&(header[24]);
 
+	//linear size is the size of the base image, not including mipmaps
+	//should be equivalent to ((width + 3) / 4)*((height + 3) / 4)*blockSize
 	unsigned int linearSize = *(unsigned int*)&(header[16]);
 	unsigned int fourCC = *(unsigned int*)&(header[80]);
 
 	unsigned char * buffer;
 	/* how big is it going to be including all mipmaps? */
-	*imageSize = *mipmapCount > 1 ? linearSize * 2 : linearSize;
-	buffer = (unsigned char*)malloc(*imageSize * sizeof(unsigned char));
-	fread(buffer, 1, *imageSize, fp);
+	int imageSize = *mipmapCount > 1 ? linearSize * 2 : linearSize;
+	buffer = (unsigned char*)malloc(imageSize * sizeof(unsigned char));
+	fread(buffer, 1, imageSize, fp);
 	/* close the file pointer */
 	fclose(fp);
 
@@ -705,7 +715,7 @@ unsigned char * Visual::LoadDDS(std::string imagepath, int * format, int * mipma
 	return buffer;
 }
 
-void Visual::GetGlError()
+void Visual::CheckGlError(std::string message)
 {
 	GLenum errorCode;
 	while ((errorCode = glGetError()) != GL_NO_ERROR)
@@ -721,6 +731,47 @@ void Visual::GetGlError()
 		case GL_OUT_OF_MEMORY:                 error = "OUT_OF_MEMORY"; break;
 		case GL_INVALID_FRAMEBUFFER_OPERATION: error = "INVALID_FRAMEBUFFER_OPERATION"; break;
 		}
-		std::cout << error << std::endl;
+		std::cout << message << " : " << error << std::endl;
 	}
 }
+
+//void APIENTRY Visual::glDebugOutput(GLenum source ,GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar *message, const void *userParam)
+//{
+//	// ignore non-significant error/warning codes
+//	if (id == 131169 || id == 131185 || id == 131218 || id == 131204) return;
+//
+//	std::cout << "---------------" << std::endl;
+//	std::cout << "Debug message (" << id << "): " << message << std::endl;
+//
+//	switch (source)
+//	{
+//	case GL_DEBUG_SOURCE_API:             std::cout << "Source: API"; break;
+//	case GL_DEBUG_SOURCE_WINDOW_SYSTEM:   std::cout << "Source: Window System"; break;
+//	case GL_DEBUG_SOURCE_SHADER_COMPILER: std::cout << "Source: Shader Compiler"; break;
+//	case GL_DEBUG_SOURCE_THIRD_PARTY:     std::cout << "Source: Third Party"; break;
+//	case GL_DEBUG_SOURCE_APPLICATION:     std::cout << "Source: Application"; break;
+//	case GL_DEBUG_SOURCE_OTHER:           std::cout << "Source: Other"; break;
+//	} std::cout << std::endl;
+//
+//	switch (type)
+//	{
+//	case GL_DEBUG_TYPE_ERROR:               std::cout << "Type: Error"; break;
+//	case GL_DEBUG_TYPE_DEPRECATED_BEHAVIOR: std::cout << "Type: Deprecated Behaviour"; break;
+//	case GL_DEBUG_TYPE_UNDEFINED_BEHAVIOR:  std::cout << "Type: Undefined Behaviour"; break;
+//	case GL_DEBUG_TYPE_PORTABILITY:         std::cout << "Type: Portability"; break;
+//	case GL_DEBUG_TYPE_PERFORMANCE:         std::cout << "Type: Performance"; break;
+//	case GL_DEBUG_TYPE_MARKER:              std::cout << "Type: Marker"; break;
+//	case GL_DEBUG_TYPE_PUSH_GROUP:          std::cout << "Type: Push Group"; break;
+//	case GL_DEBUG_TYPE_POP_GROUP:           std::cout << "Type: Pop Group"; break;
+//	case GL_DEBUG_TYPE_OTHER:               std::cout << "Type: Other"; break;
+//	} std::cout << std::endl;
+//
+//	switch (severity)
+//	{
+//	case GL_DEBUG_SEVERITY_HIGH:         std::cout << "Severity: high"; break;
+//	case GL_DEBUG_SEVERITY_MEDIUM:       std::cout << "Severity: medium"; break;
+//	case GL_DEBUG_SEVERITY_LOW:          std::cout << "Severity: low"; break;
+//	case GL_DEBUG_SEVERITY_NOTIFICATION: std::cout << "Severity: notification"; break;
+//	} std::cout << std::endl;
+//	std::cout << std::endl;
+//}
