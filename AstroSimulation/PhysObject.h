@@ -1,17 +1,17 @@
-#ifndef SIMULATIONOBJECT_H
-#define SIMULATIONOBJECT_H
+#ifndef PHYSOBJECT_H
+#define PHYSOBJECT_H
 
 #pragma once
 #include <string>
 #include <cmath>
 #include <array>
 #include "ValueWithUnits.h"
-class SimulationObject
+class PhysObject
 {
 public:
-	SimulationObject(std::string Name, float Mass, float Position[3], float Velocity[3], float Radius);
-	~SimulationObject();
-	SimulationObject() {};
+	PhysObject(std::string Name, float Mass, float Position[3], float Velocity[3], float Radius);
+	~PhysObject();
+	PhysObject() {};
 
 	float GetSpeed();
 	void SetPosition(float newPosition, int index);

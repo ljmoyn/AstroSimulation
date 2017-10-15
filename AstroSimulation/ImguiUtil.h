@@ -9,7 +9,7 @@
 // If you are new to ImGui, see examples/README.txt and documentation at the top of imgui.cpp.
 // https://github.com/ocornut/imgui
 
-#include "Simulation.h"
+#include "Physics.h"
 #include "Camera.h"
 #include <Windows.h>
 
@@ -88,11 +88,11 @@ struct ImguiStatus {
 #define IM_ARRAYSIZE(_ARR)  ((int)(sizeof(_ARR)/sizeof(*_ARR)))
 
 // Menus / Windows
-IMGUI_API void ShowMainUi(Simulation* simulation, std::vector<std::vector<GLfloat>> * lines, Camera* camera, ImguiStatus* imguiStatus, float* xTranslate, float* yTranslate, float* zTranslate);
-IMGUI_API void MenuBar(Simulation* simulation, ImguiStatus* imguiStatus);
-IMGUI_API void TopLeftOverlay(Simulation* simulation);
-IMGUI_API void LoadPopup(Simulation* simulation, ImguiStatus* imguiStatus);
-IMGUI_API void SavePopup(Simulation* simulation, ImguiStatus* imguiStatus);
+IMGUI_API void ShowMainUi(Physics* physics, std::vector<std::vector<GLfloat>> * lines, Camera* camera, ImguiStatus* imguiStatus, float* xTranslate, float* yTranslate, float* zTranslate);
+IMGUI_API void MenuBar(Physics* physics, ImguiStatus* imguiStatus);
+IMGUI_API void TopLeftOverlay(Physics* physics);
+IMGUI_API void LoadPopup(Physics* physics, ImguiStatus* imguiStatus);
+IMGUI_API void SavePopup(Physics* physics, ImguiStatus* imguiStatus);
 
 // Widgets
 IMGUI_API bool InputScientific(const char* label, float* v, const char *display_format = "%.3g", ImGuiInputTextFlags extra_flags = 0);

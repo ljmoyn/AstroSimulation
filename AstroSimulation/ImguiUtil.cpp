@@ -23,9 +23,9 @@
 #include <GLFW/glfw3native.h>
 #endif
 
-#include "Visual.h"
 #include "Simulation.h"
-#include "SimulationObject.h"
+#include "Physics.h"
+#include "PhysObject.h"
 #include "ObjectSettings.h"
 
 // Data
@@ -520,16 +520,16 @@ bool UnitCombo3(std::string id, ValueWithUnits3<type>* value) {
 }
 
 // Demonstrate creating a simple static window with no decoration.
-void TopLeftOverlay(Simulation* simulation)
+void TopLeftOverlay(Physics* physics)
 {
 	ImGui::SetNextWindowPos(ImVec2(5, 20));
 	ImGui::Begin("TopLeftOverlay", NULL, ImVec2(0, 0), 0.3f, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoSavedSettings);
-	ImGui::Text(("Time: " + std::to_string(simulation->time)).c_str());
+	ImGui::Text(("Time: " + std::to_string(physics->time)).c_str());
 	ImGui::Text("FPS: %.3f", ImGui::GetIO().Framerate);
 	ImGui::End();
 }
 
-void LoadPopup(Simulation* simulation, ImguiStatus* imguiStatus) {
+void LoadPopup(Physics* physics, ImguiStatus* imguiStatus) {
 	//would be nicer if I could put OpenPopup inside the menu item, and get rid of showLoadPopup. Unfortunately, OpenPopup only works if it is on the same level as BeginPopupModal. 
 	//I can't put BeginPopupModal inside the menu, because it would then only show up if the menu is open (which is not the case after you click a menu item)
 	//https://github.com/ocornut/imgui/issues/331
@@ -579,7 +579,7 @@ void LoadPopup(Simulation* simulation, ImguiStatus* imguiStatus) {
 			for (int i = 0; i < imguiStatus->selected.size(); i++)
 			{
 				if (imguiStatus->selected[i])
-					Simulation::FromXml(simulation, "../saves/" + imguiStatus->saveFiles[i], imguiStatus->textureFolders);
+					Physics::FromXml(physics, "../saves/" + imguiStatus->saveFiles[i], imguiStatus->textureFolders);
 			}
 
 			imguiStatus->showLoadPopup = false;
@@ -595,7 +595,7 @@ void LoadPopup(Simulation* simulation, ImguiStatus* imguiStatus) {
 	}
 }
 
-void SavePopup(Simulation* simulation, ImguiStatus* imguiStatus) {
+void SavePopup(Physics* physics, ImguiStatus* imguiStatus) {
 	if (imguiStatus->showSavePopup)
 	{
 		ImGui::OpenPopup("Save");
@@ -609,7 +609,7 @@ void SavePopup(Simulation* simulation, ImguiStatus* imguiStatus) {
 
 		if (ImGui::Button("Save##Button", ImVec2(120, 0)))
 		{
-			Simulation::ToXml(*simulation, "../saves/" + std::string(filename) + ".xml");
+			Physics::ToXml(*physics, "../saves/" + std::string(filename) + ".xml");
 			imguiStatus->saveFiles.push_back(std::string(filename) + ".xml");
 			imguiStatus->selected.push_back(false);
 			ImGui::CloseCurrentPopup();
@@ -626,7 +626,7 @@ void SavePopup(Simulation* simulation, ImguiStatus* imguiStatus) {
 	}
 }
 
-void MenuBar(Simulation* simulation, ImguiStatus* imguiStatus) {
+void MenuBar(Physics* physics, ImguiStatus* imguiStatus) {
 	if (ImGui::BeginMainMenuBar())
 	{
 		if (ImGui::BeginMenu("File"))
@@ -646,11 +646,11 @@ void MenuBar(Simulation* simulation, ImguiStatus* imguiStatus) {
 		ImGui::EndMainMenuBar();
 	}
 
-	LoadPopup(simulation, imguiStatus);
-	SavePopup(simulation, imguiStatus);
+	LoadPopup(physics, imguiStatus);
+	SavePopup(physics, imguiStatus);
 }
 
-void ShowMainUi(Simulation* simulation, std::vector<std::vector<GLfloat> > * paths, Camera* camera, ImguiStatus* imguiStatus, float* xTranslate, float* yTranslate, float* zTranslate)
+void ShowMainUi(Physics* physics, std::vector<std::vector<GLfloat> > * paths, Camera* camera, ImguiStatus* imguiStatus, float* xTranslate, float* yTranslate, float* zTranslate)
 {
 	ImGuiWindowFlags window_flags = 0;
 	window_flags |= ImGuiWindowFlags_ShowBorders;
@@ -659,10 +659,10 @@ void ShowMainUi(Simulation* simulation, std::vector<std::vector<GLfloat> > * pat
 	style.Colors[ImGuiCol_PopupBg] = ImVec4(0.05f, 0.05f, 0.10f, 1.00f);
 	style.Colors[ImGuiCol_Border] = ImVec4{ 255,255,255,255 };
 
-	MenuBar(simulation, imguiStatus);
+	MenuBar(physics, imguiStatus);
 
 	if (imguiStatus->showTopLeftOverlay)
-		TopLeftOverlay(simulation);
+		TopLeftOverlay(physics);
 
 	ImGui::SetNextWindowSize(ImVec2(500, 680), ImGuiSetCond_FirstUseEver);
 	if (!ImGui::Begin("Simulation Controls", &imguiStatus->showMainWindow, window_flags))
@@ -682,74 +682,74 @@ void ShowMainUi(Simulation* simulation, std::vector<std::vector<GLfloat> > * pat
 		ImGui::AlignFirstTextHeightToWidgets();
 		ImGui::Text("Algorithm "); ImGui::SameLine();
 		ImGui::PushItemWidth(288);
-		ImGui::Combo("##Algorithm", &simulation->selectedAlgorithm, simulation->algorithms, IM_ARRAYSIZE(simulation->algorithms));
+		ImGui::Combo("##Algorithm", &physics->selectedAlgorithm, physics->algorithms, IM_ARRAYSIZE(physics->algorithms));
 		ImGui::PopItemWidth();
 
 		ImGui::AlignFirstTextHeightToWidgets();
 		ImGui::Text("Timestep  "); ImGui::SameLine();
 		ImGui::PushItemWidth(200);
-		ImGui::InputFloat("##Timestep", &simulation->timestep.value, 0.001f); ImGui::SameLine();
+		ImGui::InputFloat("##Timestep", &physics->timestep.value, 0.001f); ImGui::SameLine();
 		ImGui::PushItemWidth(80);
-		UnitCombo<UnitType::Time>("##TimestepUnits", &simulation->timestep);
+		UnitCombo<UnitType::Time>("##TimestepUnits", &physics->timestep);
 		ImGui::PopItemWidth();
 
 		ImGui::AlignFirstTextHeightToWidgets();
 		ImGui::Text("Total Time"); ImGui::SameLine();
 		ImGui::PushItemWidth(200);
-		ImGui::InputFloat("##Total Time", &simulation->totalTime.value, 0.01f); ImGui::SameLine();
+		ImGui::InputFloat("##Total Time", &physics->totalTime.value, 0.01f); ImGui::SameLine();
 		ImGui::PushItemWidth(80);
-		UnitCombo<UnitType::Time>("##TotalTimeUnits", &simulation->totalTime);
+		UnitCombo<UnitType::Time>("##TotalTimeUnits", &physics->totalTime);
 		ImGui::PopItemWidth();
 
-		int totalTimesteps = round(simulation->totalTime.GetBaseValue() / simulation->timestep.GetBaseValue());
+		int totalTimesteps = round(physics->totalTime.GetBaseValue() / physics->timestep.GetBaseValue());
 		ImGui::PushItemWidth(300);
-		for (int i = 0; i < simulation->getCurrentObjects().size(); i++) {
-			SimulationObject currentObject = simulation->computedData[simulation->dataIndex][i];
+		for (int i = 0; i < physics->getCurrentObjects().size(); i++) {
+			PhysObject currentObject = physics->computedData[physics->dataIndex][i];
 			if (ImGui::CollapsingHeader(currentObject.name.c_str()))
 			{
 				ImGui::AlignFirstTextHeightToWidgets();
 				ImGui::Text("Mass    "); ImGui::SameLine();
-				bool massChanged = InputScientific(("##Mass" + currentObject.name).c_str(), &simulation->computedData[simulation->dataIndex][i].mass.value);
+				bool massChanged = InputScientific(("##Mass" + currentObject.name).c_str(), &physics->computedData[physics->dataIndex][i].mass.value);
 				
 				//default spacing between units and entry boxes is inconsistent form some reason, so have to hardcode position on the line. Sad.
 				ImGui::SameLine(375.0f); ImGui::PushItemWidth(120);
-				bool massUnitsChanged = UnitCombo<UnitType::Mass>("##Mass" + currentObject.name,&simulation->computedData[simulation->dataIndex][i].mass);
+				bool massUnitsChanged = UnitCombo<UnitType::Mass>("##Mass" + currentObject.name,&physics->computedData[physics->dataIndex][i].mass);
 				ImGui::PopItemWidth();
 
 				ImGui::AlignFirstTextHeightToWidgets();
 				ImGui::Text("Position"); ImGui::SameLine();
-				bool positionChanged = ImGui::InputFloat3(("##Position " + currentObject.name).c_str(), &simulation->computedData[simulation->dataIndex][i].position.value[0]);
+				bool positionChanged = ImGui::InputFloat3(("##Position " + currentObject.name).c_str(), &physics->computedData[physics->dataIndex][i].position.value[0]);
 				
 				ImGui::SameLine(375.0f); ImGui::PushItemWidth(120);
-				bool positionUnitsChanged = UnitCombo3<UnitType::Distance>("##PositionUnits" + currentObject.name, &simulation->computedData[simulation->dataIndex][i].position);
+				bool positionUnitsChanged = UnitCombo3<UnitType::Distance>("##PositionUnits" + currentObject.name, &physics->computedData[physics->dataIndex][i].position);
 				ImGui::PopItemWidth();
 
 				ImGui::AlignFirstTextHeightToWidgets();
 				ImGui::Text("Velocity"); ImGui::SameLine();
-				bool velocityChanged = ImGui::InputFloat3(("##Velocity " + currentObject.name).c_str(), &simulation->computedData[simulation->dataIndex][i].velocity.value[0]);
+				bool velocityChanged = ImGui::InputFloat3(("##Velocity " + currentObject.name).c_str(), &physics->computedData[physics->dataIndex][i].velocity.value[0]);
 				
 				ImGui::SameLine(375.0f); ImGui::PushItemWidth(120);
-				bool velocityUnitsChanged = UnitCombo3<UnitType::Velocity>("##VelocityUnits" + currentObject.name, &simulation->computedData[simulation->dataIndex][i].velocity);
+				bool velocityUnitsChanged = UnitCombo3<UnitType::Velocity>("##VelocityUnits" + currentObject.name, &physics->computedData[physics->dataIndex][i].velocity);
 				ImGui::PopItemWidth();
 
 				if (!imguiStatus->isPaused && (massChanged || positionChanged || velocityChanged))
 					imguiStatus->isPaused = true;
 
 				if (massUnitsChanged || positionUnitsChanged || velocityUnitsChanged) {
-					for (int j = 0; j < simulation->computedData.size(); j++) {				
+					for (int j = 0; j < physics->computedData.size(); j++) {				
 						if (massUnitsChanged) {
-							int newMassUnit = simulation->computedData[simulation->dataIndex][i].mass.unitIndex;
-							simulation->computedData[j][i].mass.ConvertToUnits(newMassUnit);
+							int newMassUnit = physics->computedData[physics->dataIndex][i].mass.unitIndex;
+							physics->computedData[j][i].mass.ConvertToUnits(newMassUnit);
 						}
 
 						if (positionUnitsChanged) {
-							int newPositionUnit = simulation->computedData[simulation->dataIndex][i].position.unitIndex;
-							simulation->computedData[j][i].position.ConvertToUnits(newPositionUnit);
+							int newPositionUnit = physics->computedData[physics->dataIndex][i].position.unitIndex;
+							physics->computedData[j][i].position.ConvertToUnits(newPositionUnit);
 						}
 
 						if (velocityUnitsChanged) {
-							int newVelocityUnit = simulation->computedData[simulation->dataIndex][i].velocity.unitIndex;
-							simulation->computedData[j][i].velocity.ConvertToUnits(newVelocityUnit);
+							int newVelocityUnit = physics->computedData[physics->dataIndex][i].velocity.unitIndex;
+							physics->computedData[j][i].velocity.ConvertToUnits(newVelocityUnit);
 						}
 					}
 				}
@@ -760,14 +760,14 @@ void ShowMainUi(Simulation* simulation, std::vector<std::vector<GLfloat> > * pat
 		{
 			imguiStatus->isPaused = true;
 
-			simulation->temporaryData = simulation->computedData;
+			physics->temporaryData = physics->computedData;
 
-			simulation->temporaryIndex = simulation->dataIndex;
+			physics->temporaryIndex = physics->dataIndex;
 
-			std::vector<SimulationObject> currentFrame = simulation->getCurrentObjects();
-			simulation->computedData = { currentFrame };
-			simulation->dataIndex = 0;
-			Visual::updatePaths(simulation, paths, true);
+			std::vector<PhysObject> currentFrame = physics->getCurrentObjects();
+			physics->computedData = { currentFrame };
+			physics->dataIndex = 0;
+			Simulation::updatePaths(physics, paths, true);
 
 			ImGui::SetNextWindowSize(ImVec2(300, 100), ImGuiSetCond_FirstUseEver);
 			ImGui::OpenPopup("Computing timesteps...");
@@ -776,21 +776,21 @@ void ShowMainUi(Simulation* simulation, std::vector<std::vector<GLfloat> > * pat
 		{
 			char progressString[32];
 
-			if (simulation->dataIndex + 1 > totalTimesteps)
+			if (physics->dataIndex + 1 > totalTimesteps)
 				ImGui::CloseCurrentPopup();
 			else {
-				simulation->step(simulation->timestep.GetBaseValue());
-				Visual::updatePaths(simulation, paths, false);
+				physics->step(physics->timestep.GetBaseValue());
+				Simulation::updatePaths(physics, paths, false);
 			}
-			sprintf_s(progressString, "%d/%d", simulation->dataIndex + 1, totalTimesteps);
+			sprintf_s(progressString, "%d/%d", physics->dataIndex + 1, totalTimesteps);
 
-			ImGui::ProgressBar((float)simulation->dataIndex / totalTimesteps, ImVec2(0.f, 0.f), progressString);
+			ImGui::ProgressBar((float)physics->dataIndex / totalTimesteps, ImVec2(0.f, 0.f), progressString);
 
 
 			if (ImGui::Button("Cancel")) {
-				simulation->computedData = simulation->temporaryData;
-				simulation->dataIndex = simulation->temporaryIndex;
-				simulation->temporaryData = {};
+				physics->computedData = physics->temporaryData;
+				physics->dataIndex = physics->temporaryIndex;
+				physics->temporaryData = {};
 
 				ImGui::CloseCurrentPopup();
 			}
@@ -804,16 +804,16 @@ void ShowMainUi(Simulation* simulation, std::vector<std::vector<GLfloat> > * pat
 		ImGui::AlignFirstTextHeightToWidgets();
 		ImGui::Text("Object Focus  "); ImGui::SameLine();
 		ImGui::PushItemWidth(-1);
-		std::vector<std::string> names = simulation->GetObjectNames();
+		std::vector<std::string> names = physics->GetObjectNames();
 
-		if (ImGui::Combo("##ObjectFocus", &simulation->objectFocus, vector_getter, static_cast<void*>(&names), names.size())) 
+		if (ImGui::Combo("##ObjectFocus", &physics->objectFocus, vector_getter, static_cast<void*>(&names), names.size())) 
 		{
-			int originalIndex = simulation->dataIndex;
+			int originalIndex = physics->dataIndex;
 
-			for (simulation->dataIndex = 0; simulation->dataIndex < simulation->computedData.size(); simulation->dataIndex++)
-				Visual::updatePaths(simulation, paths, simulation->dataIndex == 0);
+			for (physics->dataIndex = 0; physics->dataIndex < physics->computedData.size(); physics->dataIndex++)
+				Simulation::updatePaths(physics, paths, physics->dataIndex == 0);
 
-			simulation->dataIndex = originalIndex;
+			physics->dataIndex = originalIndex;
 
 			//changing focus, and want to re-center on the new target
 			*xTranslate = 0.0;
@@ -841,7 +841,7 @@ void ShowMainUi(Simulation* simulation, std::vector<std::vector<GLfloat> > * pat
 		ImGui::AlignFirstTextHeightToWidgets();
 		ImGui::Text("Playback Speed"); ImGui::SameLine();
 		ImGui::PushItemWidth(-1);
-		ImGui::InputInt("##Playback Speed", &simulation->playbackSpeed);
+		ImGui::InputInt("##Playback Speed", &physics->playbackSpeed);
 
 		if (ImGui::Button(imguiStatus->isPaused ? "Play" : "Pause", ImVec2(97, 0)))
 		{
@@ -849,8 +849,8 @@ void ShowMainUi(Simulation* simulation, std::vector<std::vector<GLfloat> > * pat
 		}
 		ImGui::SameLine();
 		ImGui::PushItemWidth(-1);
-		if(ImGui::SliderInt("##playbackSlider", &simulation->dataIndex, 0, simulation->computedData.size() - 1))
-			simulation->dataIndex = clip(simulation->dataIndex, 0, (int)simulation->computedData.size() - 1);
+		if(ImGui::SliderInt("##playbackSlider", &physics->dataIndex, 0, physics->computedData.size() - 1))
+			physics->dataIndex = clip(physics->dataIndex, 0, (int)physics->computedData.size() - 1);
 	}
 
 	ImGui::End();

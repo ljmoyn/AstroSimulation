@@ -128,10 +128,10 @@
     <ClCompile Include="ImguiUtil.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="ObjectSettings.cpp" />
-    <ClCompile Include="Simulation.cpp" />
-    <ClCompile Include="SimulationObject.cpp" />
+    <ClCompile Include="Physics.cpp" />
+    <ClCompile Include="PhysObject.cpp" />
     <ClCompile Include="Sphere.cpp" />
-    <ClCompile Include="Visual.cpp" />
+    <ClCompile Include="Simulation.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Camera.h" />
@@ -142,14 +142,14 @@
     <ClInclude Include="imgui_internal.h" />
     <ClInclude Include="ObjectSettings.h" />
     <ClInclude Include="Shader.h" />
-    <ClInclude Include="Simulation.h" />
-    <ClInclude Include="SimulationObject.h" />
+    <ClInclude Include="Physics.h" />
+    <ClInclude Include="PhysObject.h" />
     <ClInclude Include="Sphere.h" />
     <ClInclude Include="stb_rect_pack.h" />
     <ClInclude Include="stb_textedit.h" />
     <ClInclude Include="stb_truetype.h" />
     <ClInclude Include="ValueWithUnits.h" />
-    <ClInclude Include="Visual.h" />
+    <ClInclude Include="Simulation.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="ObjectFragment.shader" />

@@ -1,14 +1,14 @@
-#include "Visual.h"
+#include "Simulation.h"
 
 int main()
 {
-	Visual visual("..\\saves\\Default.xml");
-	Visual::initVisualControls(&visual);
+	Simulation simulation("..\\saves\\Default.xml");
+	Simulation::initSimulationControls(&simulation);
 
 	// Game loop
-	while (!glfwWindowShouldClose(visual.window))
+	while (!glfwWindowShouldClose(simulation.window))
 	{
-		visual.update();
+		simulation.update();
 	}
 
 	// Cleanup
