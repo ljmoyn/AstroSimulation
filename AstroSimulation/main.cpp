@@ -1,12 +1,12 @@
 #include "Simulation.h"
-
+#include "UserInterface.h"
 int main()
 {
 	Simulation simulation("..\\saves\\Default.xml");
-	Simulation::initSimulationControls(&simulation);
+	UserInterface::initSimulationControls(&simulation);
 
 	// Game loop
-	while (!glfwWindowShouldClose(simulation.window))
+	while (!glfwWindowShouldClose(simulation.graphics.window))
 	{
 		simulation.update();
 	}
