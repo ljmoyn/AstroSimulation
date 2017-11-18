@@ -16,8 +16,6 @@ public:
 	//void ShowMainUi();
 	void update();
 
-	static void updatePaths(Physics * physics, std::vector<std::vector<GLfloat> > * paths, bool firstFrame);
-
 	void mouse_button_callback(GLFWwindow* window, int button, int action, int mods);
 	void cursor_position_callback(GLFWwindow* window, double xpos, double ypos);
 	void scroll_callback(GLFWwindow* window, double xpos, double ypos);
