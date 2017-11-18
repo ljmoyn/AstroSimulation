@@ -25,7 +25,6 @@ public:
 
 	Physics physics;
 	Graphics graphics;
-	std::vector<std::vector<GLfloat> > paths;
 	ImguiStatus imguiStatus;
 
 

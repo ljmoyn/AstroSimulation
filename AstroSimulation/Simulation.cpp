@@ -17,39 +17,13 @@ Simulation::Simulation(std::string physicsSource)
 	Physics::FromXml(&physics, physicsSource, imguiStatus.textureFolders);
 
 	for (int i = 0; i < physics.getCurrentObjects().size(); i++)
-		paths.push_back({});
+		physics.paths.push_back({});
 }
 
 Simulation::~Simulation()
 {
 	// Terminate GLFW, clearing any resources allocated by GLFW.
 	glfwTerminate();
-}
-
-void Simulation::updatePaths(Physics * physics, std::vector<std::vector<GLfloat> > * paths, bool firstFrame) {
-	std::vector<PhysObject> currentObjects = physics->getCurrentObjects();
-	if (firstFrame) {
-		*paths = {};
-		for (int i = 0; i < physics->getCurrentObjects().size(); i++) {
-			std::vector<float> offsets = physics->GetFocusOffsets(currentObjects);
-
-			paths->push_back({
-				currentObjects[i].position.GetBaseValue(0) - offsets[0],
-				currentObjects[i].position.GetBaseValue(1) - offsets[1],
-				currentObjects[i].position.GetBaseValue(2) - offsets[2],
-			});
-		}
-
-	}
-	else {
-		for (int i = 0; i < currentObjects.size(); i++) {
-			std::vector<float> offsets = physics->GetFocusOffsets(currentObjects);
-
-			(*paths)[i].push_back(currentObjects[i].position.GetBaseValue(0) - offsets[0]);
-			(*paths)[i].push_back(currentObjects[i].position.GetBaseValue(1) - offsets[1]);
-			(*paths)[i].push_back(currentObjects[i].position.GetBaseValue(2) - offsets[2]);
-		}
-	}
 }
 
 void Simulation::update()
@@ -59,7 +33,7 @@ void Simulation::update()
 
 	ImGui_ImplGlfwGL3_NewFrame();
 
-	ShowMainUi(&physics, &paths, &graphics.camera, &imguiStatus, &graphics.xTranslate, &graphics.yTranslate, &graphics.zTranslate);
+	ShowMainUi(&physics, &graphics.camera, &imguiStatus, &graphics.xTranslate, &graphics.yTranslate, &graphics.zTranslate);
 
 	if (!imguiStatus.isPaused && physics.dataIndex + physics.playbackSpeed > (int)physics.computedData.size() - 1) {
 		physics.dataIndex = 0;
@@ -89,7 +63,7 @@ void Simulation::update()
 
 	graphics.drawSpheres(&physics);
 	graphics.drawPoints(&physics);
-	graphics.drawLines(&physics, &paths);
+	graphics.drawLines(&physics);
 
 	ImGui::Render();
 

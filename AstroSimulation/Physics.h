@@ -41,6 +41,9 @@ public:
 	std::vector<ObjectSettings> objectSettings;
 	std::vector<std::vector<PhysObject>> computedData;
 
+	void updatePaths(bool firstFrame);
+	std::vector<std::vector<float> > paths;
+
 	//used to store previous data when in the middle of computing new set. Needed so that "Cancel" button can reset everything
 	std::vector<std::vector<PhysObject>> temporaryData;
 	int temporaryIndex;

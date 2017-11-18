@@ -650,7 +650,7 @@ void MenuBar(Physics* physics, ImguiStatus* imguiStatus) {
 	SavePopup(physics, imguiStatus);
 }
 
-void ShowMainUi(Physics* physics, std::vector<std::vector<GLfloat> > * paths, Camera* camera, ImguiStatus* imguiStatus, float* xTranslate, float* yTranslate, float* zTranslate)
+void ShowMainUi(Physics* physics, Camera* camera, ImguiStatus* imguiStatus, float* xTranslate, float* yTranslate, float* zTranslate)
 {
 	ImGuiWindowFlags window_flags = 0;
 	window_flags |= ImGuiWindowFlags_ShowBorders;
@@ -767,7 +767,7 @@ void ShowMainUi(Physics* physics, std::vector<std::vector<GLfloat> > * paths, Ca
 			std::vector<PhysObject> currentFrame = physics->getCurrentObjects();
 			physics->computedData = { currentFrame };
 			physics->dataIndex = 0;
-			Simulation::updatePaths(physics, paths, true);
+			physics->updatePaths(true);
 
 			ImGui::SetNextWindowSize(ImVec2(300, 100), ImGuiSetCond_FirstUseEver);
 			ImGui::OpenPopup("Computing timesteps...");
@@ -780,7 +780,7 @@ void ShowMainUi(Physics* physics, std::vector<std::vector<GLfloat> > * paths, Ca
 				ImGui::CloseCurrentPopup();
 			else {
 				physics->step(physics->timestep.GetBaseValue());
-				Simulation::updatePaths(physics, paths, false);
+				physics->updatePaths(false);
 			}
 			sprintf_s(progressString, "%d/%d", physics->dataIndex + 1, totalTimesteps);
 
@@ -811,7 +811,7 @@ void ShowMainUi(Physics* physics, std::vector<std::vector<GLfloat> > * paths, Ca
 			int originalIndex = physics->dataIndex;
 
 			for (physics->dataIndex = 0; physics->dataIndex < physics->computedData.size(); physics->dataIndex++)
-				Simulation::updatePaths(physics, paths, physics->dataIndex == 0);
+				physics->updatePaths(physics->dataIndex == 0);
 
 			physics->dataIndex = originalIndex;
 

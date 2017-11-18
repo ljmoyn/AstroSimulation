@@ -88,7 +88,7 @@ struct ImguiStatus {
 #define IM_ARRAYSIZE(_ARR)  ((int)(sizeof(_ARR)/sizeof(*_ARR)))
 
 // Menus / Windows
-IMGUI_API void ShowMainUi(Physics* physics, std::vector<std::vector<GLfloat>> * lines, Camera* camera, ImguiStatus* imguiStatus, float* xTranslate, float* yTranslate, float* zTranslate);
+IMGUI_API void ShowMainUi(Physics* physics, Camera* camera, ImguiStatus* imguiStatus, float* xTranslate, float* yTranslate, float* zTranslate);
 IMGUI_API void MenuBar(Physics* physics, ImguiStatus* imguiStatus);
 IMGUI_API void TopLeftOverlay(Physics* physics);
 IMGUI_API void LoadPopup(Physics* physics, ImguiStatus* imguiStatus);

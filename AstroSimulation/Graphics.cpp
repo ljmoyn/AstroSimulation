@@ -399,7 +399,7 @@ void Graphics::drawSpheres(Physics * physics) {
 	glDeleteBuffers(1, &EBO);
 }
 
-void Graphics::drawLines(Physics * physics, std::vector<std::vector<GLfloat> > * paths) {
+void Graphics::drawLines(Physics * physics) {
 	if (physics->computedData.size() < 2)
 		return;
 
@@ -417,7 +417,7 @@ void Graphics::drawLines(Physics * physics, std::vector<std::vector<GLfloat> > *
 	std::vector<PhysObject> objects = physics->getCurrentObjects();
 	for (int i = 0; i < objects.size(); i++) {
 
-		if ((*paths)[i].empty())
+		if (physics->paths[i].empty())
 			continue;
 
 		glGenVertexArrays(1, &VAO);
@@ -427,7 +427,7 @@ void Graphics::drawLines(Physics * physics, std::vector<std::vector<GLfloat> > *
 		glGenBuffers(1, &vertexVBO);
 		glEnableVertexAttribArray(0);
 		glBindBuffer(GL_ARRAY_BUFFER, vertexVBO);
-		glBufferData(GL_ARRAY_BUFFER, (*paths)[i].size() * sizeof(GLfloat), &(*paths)[i][0], GL_STREAM_DRAW);
+		glBufferData(GL_ARRAY_BUFFER, physics->paths[i].size() * sizeof(GLfloat), &(physics->paths)[i][0], GL_STREAM_DRAW);
 		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), (GLvoid*)0);
 
 		// Color attribute

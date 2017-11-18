@@ -34,7 +34,7 @@ public:
 	void setView();
 	void drawPoints(Physics * physics);
 	void drawSpheres(Physics * physics);
-	void drawLines(Physics * physics, std::vector<std::vector<GLfloat> > * paths);
+	void drawLines(Physics * physics);
 
 	void LoadTextures(std::vector<std::string> textureFolders);
 

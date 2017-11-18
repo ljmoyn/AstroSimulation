@@ -183,7 +183,31 @@ void Physics::ConvertObjectsToUnits(std::vector<PhysObject>* objects, std::vecto
 	}
 }
 
+void Physics::updatePaths(bool firstFrame) {
+	std::vector<PhysObject> currentObjects = getCurrentObjects();
+	if (firstFrame) {
+		paths = {};
+		for (int i = 0; i < currentObjects.size(); i++) {
+			std::vector<float> offsets = GetFocusOffsets(currentObjects);
 
+			paths.push_back({
+				currentObjects[i].position.GetBaseValue(0) - offsets[0],
+				currentObjects[i].position.GetBaseValue(1) - offsets[1],
+				currentObjects[i].position.GetBaseValue(2) - offsets[2],
+			});
+		}
+
+	}
+	else {
+		for (int i = 0; i < currentObjects.size(); i++) {
+			std::vector<float> offsets = GetFocusOffsets(currentObjects);
+
+			paths[i].push_back(currentObjects[i].position.GetBaseValue(0) - offsets[0]);
+			paths[i].push_back(currentObjects[i].position.GetBaseValue(1) - offsets[1]);
+			paths[i].push_back(currentObjects[i].position.GetBaseValue(2) - offsets[2]);
+		}
+	}
+}
 
 //source: http://physics.ucsc.edu/~peter/242/leapfrog.pdf
 void Physics::velocityVerlet(float dt) {
