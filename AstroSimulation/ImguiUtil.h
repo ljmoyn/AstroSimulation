@@ -9,11 +9,22 @@
 // If you are new to ImGui, see examples/README.txt and documentation at the top of imgui.cpp.
 // https://github.com/ocornut/imgui
 
-#include "Physics.h"
-#include "Camera.h"
+#include "../imgui/imgui.h"
+#include "../imgui/imgui_internal.h"
+#include "ImguiUtil.h"
+
 #include <Windows.h>
 
-#include <vector>
+// GL3W/GLFW
+#include <GL/glew.h>
+#include <GLFW/glfw3.h>
+
+#ifdef _WIN32
+#undef APIENTRY
+#define GLFW_EXPOSE_NATIVE_WIN32
+#define GLFW_EXPOSE_NATIVE_WGL
+#include <GLFW/glfw3native.h>
+#endif
 
 struct GLFWwindow;
 
@@ -32,81 +43,5 @@ IMGUI_API void        ImGui_ImplGlfwGL3_MouseButtonCallback(GLFWwindow* window, 
 IMGUI_API void        ImGui_ImplGlfwGL3_ScrollCallback(GLFWwindow* window, double xoffset, double yoffset);
 IMGUI_API void        ImGui_ImplGlfwGL3_KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods);
 IMGUI_API void        ImGui_ImplGlfwGL3_CharCallback(GLFWwindow* window, unsigned int c);
-
-struct ImguiStatus {
-	bool isPaused = true;
-	bool showMainWindow = true;
-	bool showLoadPopup = false;
-	bool showSavePopup = false;
-	std::vector<std::string> saveFiles;
-	std::vector<bool> selected;
-	std::vector<std::string> textureFolders;
-
-	bool showTopLeftOverlay = true;
-
-	//http://stackoverflow.com/questions/612097/how-can-i-get-the-list-of-files-in-a-directory-using-c-or-c
-	//https://stackoverflow.com/questions/2239872/how-to-get-list-of-folders-in-this-folder
-	//https://msdn.microsoft.com/en-us/library/aa365200(VS.85).aspx
-	//windows specific
-	std::vector<std::string> GetAllFilesInFolder(std::string folderPath)
-	{
-		std::vector<std::string> names;
-		std::string search_path = folderPath + "/*.*";
-		WIN32_FIND_DATA fd;
-		HANDLE hFind = ::FindFirstFile(search_path.c_str(), &fd);
-		if (hFind != INVALID_HANDLE_VALUE) {
-			do {
-				// read all (real) files in current folder
-				// , delete '!' read other 2 default folder . and ..
-				if (!(fd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)) {
-					names.push_back(fd.cFileName);
-				}
-			} while (::FindNextFile(hFind, &fd));
-			::FindClose(hFind);
-		}
-		return names;
-	}
-
-	std::vector<std::string> GetAllFoldersInFolder(std::string folderPath)
-	{
-		std::vector<std::string> names;
-		std::string search_path = folderPath;
-		WIN32_FIND_DATA fd;
-		HANDLE hFind = ::FindFirstFile(search_path.c_str(), &fd);
-		if (hFind != INVALID_HANDLE_VALUE) {
-			do {
-				if ((fd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) && (std::string)(fd.cFileName) != "." && (std::string)(fd.cFileName) != "..") {
-					names.push_back(fd.cFileName);
-				}
-			} while (::FindNextFile(hFind, &fd));
-			::FindClose(hFind);
-		}
-		return names;
-	}
-};
-
-#define IM_ARRAYSIZE(_ARR)  ((int)(sizeof(_ARR)/sizeof(*_ARR)))
-
-// Menus / Windows
-IMGUI_API void ShowMainUi(Physics* physics, Camera* camera, ImguiStatus* imguiStatus, float* xTranslate, float* yTranslate, float* zTranslate);
-IMGUI_API void MenuBar(Physics* physics, ImguiStatus* imguiStatus);
-IMGUI_API void TopLeftOverlay(Physics* physics);
-IMGUI_API void LoadPopup(Physics* physics, ImguiStatus* imguiStatus);
-IMGUI_API void SavePopup(Physics* physics, ImguiStatus* imguiStatus);
-
-// Widgets
-IMGUI_API bool InputScientific(const char* label, float* v, const char *display_format = "%.3g", ImGuiInputTextFlags extra_flags = 0);
-IMGUI_API template <UnitType type> bool UnitCombo(std::string id, ValueWithUnits<type>* value);
-IMGUI_API template <UnitType type> bool UnitCombo3(std::string id, ValueWithUnits3<type>* value);
-
-//https://eliasdaler.github.io/using-imgui-with-sfml-pt2#combobox-listbox
-static auto vector_getter = [](void* vec, int idx, const char** out_text)
-{
-	auto& vector = *static_cast<std::vector<std::string>*>(vec);
-	if (idx < 0 || idx >= static_cast<int>(vector.size())) { return false; }
-	*out_text = vector.at(idx).c_str();
-	return true;
-};
-
 
 #endif

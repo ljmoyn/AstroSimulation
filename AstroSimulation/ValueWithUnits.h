@@ -43,8 +43,7 @@ struct UnitData {
 };
 
 
-template <UnitType type>
-class ValueWithUnits
+template <UnitType type> class ValueWithUnits
 {
 public:
 	ValueWithUnits() {}

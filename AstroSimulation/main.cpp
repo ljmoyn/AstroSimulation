@@ -3,7 +3,6 @@
 int main()
 {
 	Simulation simulation("..\\saves\\Default.xml");
-	UserInterface::initSimulationControls(&simulation);
 
 	// Game loop
 	while (!glfwWindowShouldClose(simulation.graphics.window))

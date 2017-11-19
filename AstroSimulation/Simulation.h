@@ -3,9 +3,7 @@
 
 #include "Physics.h"
 #include "Graphics.h"
-
-#include "../imgui/imgui.h"
-#include "ImguiUtil.h"
+#include "UserInterface.h"
 
 class Simulation
 {
@@ -15,16 +13,21 @@ public:
 
 	//void ShowMainUi();
 	void update();
+	static void MouseButtonWrapper(GLFWwindow* window, int button, int action, int mods);
+	void MouseButtonCallback(GLFWwindow* window, int button, int action, int mods);
 
-	void mouse_button_callback(GLFWwindow* window, int button, int action, int mods);
-	void cursor_position_callback(GLFWwindow* window, double xpos, double ypos);
-	void scroll_callback(GLFWwindow* window, double xpos, double ypos);
-	void window_resize_callback(GLFWwindow* window, int x, int y);
+	static void CursorPositionWrapper(GLFWwindow* window, double xpos, double ypos);
+	void CursorPositionCallback(GLFWwindow* window, double xpos, double ypos);
+
+	static void ScrollWrapper(GLFWwindow* window, double xpos, double ypos);
+	void ScrollCallback(GLFWwindow* window, double xpos, double ypos);
+
+	static void WindowResizeWrapper(GLFWwindow* window, int x, int y);
+	void WindowResizeCallback(GLFWwindow* window, int x, int y);
 
 	Physics physics;
 	Graphics graphics;
-	ImguiStatus imguiStatus;
-
+	UserInterface userInterface;
 
 private:
 	double cursorPrevX;

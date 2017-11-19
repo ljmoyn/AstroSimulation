@@ -2,22 +2,26 @@
 
 Simulation::Simulation(std::string physicsSource)
 {
-	imguiStatus.textureFolders = imguiStatus.GetAllFoldersInFolder("../cubemaps/*");
-	graphics.LoadTextures(imguiStatus.textureFolders);
-
-	// Initialize ImGui
-	ImGui_ImplGlfwGL3_Init(graphics.window, false);
-	imguiStatus.saveFiles = imguiStatus.GetAllFilesInFolder("../saves");
-	imguiStatus.selected.resize(imguiStatus.saveFiles.size());
-	std::fill(imguiStatus.selected.begin(), imguiStatus.selected.end(), false);
-	if (!imguiStatus.selected.empty())
-		imguiStatus.selected[0] = true;
+	userInterface.InitUserInterface(graphics.window);
+	graphics.LoadTextures(userInterface.textureFolders);
 
 	// get physics data
-	Physics::FromXml(&physics, physicsSource, imguiStatus.textureFolders);
+	Physics::FromXml(&physics, physicsSource, userInterface.textureFolders);
 
 	for (int i = 0; i < physics.getCurrentObjects().size(); i++)
 		physics.paths.push_back({});
+
+	//glfw requires static functions for callbacks. Store this object in the UserPointer,
+	//set static wrapper function as callbacks, getting the actual callbacks from the UserPointer so I can access all the data in the callbacks
+	glfwSetWindowUserPointer(graphics.window, this);
+
+	glfwSetMouseButtonCallback(graphics.window, MouseButtonWrapper);
+	glfwSetCursorPosCallback(graphics.window, CursorPositionWrapper);
+	glfwSetScrollCallback(graphics.window, ScrollWrapper);
+	glfwSetWindowSizeCallback(graphics.window, WindowResizeWrapper);
+
+	glfwSetKeyCallback(graphics.window, ImGui_ImplGlfwGL3_KeyCallback);
+	glfwSetCharCallback(graphics.window, ImGui_ImplGlfwGL3_CharCallback);
 }
 
 Simulation::~Simulation()
@@ -33,15 +37,15 @@ void Simulation::update()
 
 	ImGui_ImplGlfwGL3_NewFrame();
 
-	ShowMainUi(&physics, &graphics.camera, &imguiStatus, &graphics.xTranslate, &graphics.yTranslate, &graphics.zTranslate);
+	userInterface.ShowMainUi(&physics, &graphics.camera, &graphics.xTranslate, &graphics.yTranslate, &graphics.zTranslate);
 
-	if (!imguiStatus.isPaused && physics.dataIndex + physics.playbackSpeed > (int)physics.computedData.size() - 1) {
+	if (!userInterface.isPaused && physics.dataIndex + physics.playbackSpeed > (int)physics.computedData.size() - 1) {
 		physics.dataIndex = 0;
 	}
-	else if (!imguiStatus.isPaused && physics.dataIndex + physics.playbackSpeed < 0) {
+	else if (!userInterface.isPaused && physics.dataIndex + physics.playbackSpeed < 0) {
 		physics.dataIndex = (int)physics.computedData.size() - 1;
 	}
-	else if (!imguiStatus.isPaused) {
+	else if (!userInterface.isPaused) {
 		physics.dataIndex += physics.playbackSpeed;
 	}
 
@@ -71,9 +75,16 @@ void Simulation::update()
 	glfwSwapBuffers(graphics.window);
 }
 
-void Simulation::mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
+void Simulation::MouseButtonWrapper(GLFWwindow* window, int button, int action, int mods)
 {
+	void *data = glfwGetWindowUserPointer(window);
+	Simulation *simulation = static_cast<Simulation *>(data);
 
+	simulation->MouseButtonCallback(window, button, action, mods);
+}
+
+void Simulation::MouseButtonCallback(GLFWwindow* window, int button, int action, int mods)
+{
 	ImGuiIO& io = ImGui::GetIO();
 	if (io.WantCaptureMouse) {
 		ImGui_ImplGlfwGL3_MouseButtonCallback(window, button, action, mods);
@@ -99,7 +110,15 @@ void Simulation::mouse_button_callback(GLFWwindow* window, int button, int actio
 
 }
 
-void Simulation::cursor_position_callback(GLFWwindow* window, double xpos, double ypos)
+void Simulation::CursorPositionWrapper(GLFWwindow * window, double xpos, double ypos)
+{
+	void *data = glfwGetWindowUserPointer(window);
+	Simulation *simulation = static_cast<Simulation *>(data);
+
+	simulation->CursorPositionCallback(window, xpos,ypos);
+}
+
+void Simulation::CursorPositionCallback(GLFWwindow* window, double xpos, double ypos)
 {
 	if (leftMousePressed) {
 		GLfloat xoffset = xpos - cursorPrevX;
@@ -124,7 +143,16 @@ void Simulation::cursor_position_callback(GLFWwindow* window, double xpos, doubl
 	cursorPrevY = ypos;
 }
 
-void Simulation::scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
+void Simulation::ScrollWrapper(GLFWwindow * window, double xpos, double ypos)
+{
+	void *data = glfwGetWindowUserPointer(window);
+	Simulation *simulation = static_cast<Simulation *>(data);
+
+	simulation->ScrollCallback(window, xpos, ypos);
+
+}
+
+void Simulation::ScrollCallback(GLFWwindow* window, double xoffset, double yoffset)
 {
 	ImGuiIO& io = ImGui::GetIO();
 	if (io.WantCaptureMouse) {
@@ -169,7 +197,15 @@ void Simulation::scroll_callback(GLFWwindow* window, double xoffset, double yoff
 	graphics.yTranslate += (newFovXY.y - fovXY.y) * (winY / graphics.height - .5);
 }
 
-void Simulation::window_resize_callback(GLFWwindow* _window, int x, int y)
+void Simulation::WindowResizeWrapper(GLFWwindow * window, int x, int y)
+{
+	void *data = glfwGetWindowUserPointer(window);
+	Simulation *simulation = static_cast<Simulation *>(data);
+
+	simulation->WindowResizeCallback(window, x,y);
+}
+
+void Simulation::WindowResizeCallback(GLFWwindow* window, int x, int y)
 {
 	graphics.width = x;
 	graphics.height = y;
