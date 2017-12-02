@@ -24,8 +24,8 @@ public:
 	~Physics();
 
 	void step(float dt);
-	void velocityVerlet(float dt);
-	std::vector<std::vector<float>> getAccelerations(std::vector<PhysObject> objects = {});
+	void velocityVerlet(float dt, std::vector<PhysObject> * currentObjects);
+	std::vector<std::vector<float>> getAccelerations(std::vector<PhysObject> * objects = {});
 	std::vector<PhysObject> getCurrentObjects();
 	static void FromXml(Physics* physics, std::string filename, std::vector<std::string> textureFolders);
 	static void ToXml(Physics physics, std::string filename);

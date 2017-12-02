@@ -15,13 +15,16 @@ void Physics::FromXml(Physics *physics, std::string filename, std::vector<std::s
 	pugi::xml_document doc;
 
 	pugi::xml_parse_result result = doc.load_file(filename.c_str());
-	physics->time = doc.select_node("/SavedState/Simulation/Time").node().text().as_float();
+	physics->time = doc.select_node("/SavedState/Physics/Time").node().text().as_float();
 	physics->objectSettings = {};
 	std::vector<PhysObject> objects = {};
-	for (auto currentObjectNode : doc.select_nodes("/SavedState/Simulation/Objects/Object"))
+	for (auto currentObjectNode : doc.select_nodes("/SavedState/Physics/Objects/PhysObject"))
 	{
 		std::string name = currentObjectNode.node().child("Name").text().as_string();
 		float mass = currentObjectNode.node().child("Mass").text().as_float();
+		float rotationPeriod = currentObjectNode.node().child("RotationPeriod").text().as_float();
+		float axialTilt = currentObjectNode.node().child("AxialTilt").text().as_float();
+
 		float x = currentObjectNode.node().child("Position").child("x").text().as_float();
 		float y = currentObjectNode.node().child("Position").child("y").text().as_float();
 		float z = currentObjectNode.node().child("Position").child("z").text().as_float();
@@ -53,7 +56,7 @@ void Physics::FromXml(Physics *physics, std::string filename, std::vector<std::s
 		}
 
 		ObjectSettings settings(showHistory, displayType, colorString, textureIndex);
-		PhysObject currentObject(name, mass, position, velocity, radius);
+		PhysObject currentObject(name, mass, position, velocity, radius, rotationPeriod, axialTilt);
 
 		objects.push_back(currentObject);
 		physics->objectSettings.push_back(settings);
@@ -68,16 +71,18 @@ void Physics::FromXml(Physics *physics, std::string filename, std::vector<std::s
 void Physics::ToXml(Physics physics, std::string filename) {
 	pugi::xml_document xml;
 	pugi::xml_node root = xml.append_child("SavedState");
-	pugi::xml_node physicsNode = root.append_child("Simulation");
+	pugi::xml_node physicsNode = root.append_child("Physics");
 	physicsNode.append_child("Time").append_child(pugi::node_pcdata).set_value(std::to_string(physics.time).c_str());
 
 	pugi::xml_node objectsNode = physicsNode.append_child("Objects");
 	std::vector<PhysObject> objects = physics.getCurrentObjects();
 	for (int i = 0; i < objects.size(); i++)
 	{
-		pugi::xml_node objectNode = objectsNode.append_child("Object");
+		pugi::xml_node objectNode = objectsNode.append_child("PhysObject");
 		objectNode.append_child("Name").append_child(pugi::node_pcdata).set_value(objects[i].name.c_str());
 		objectNode.append_child("Mass").append_child(pugi::node_pcdata).set_value(std::to_string(objects[i].mass.value).c_str());
+		objectNode.append_child("RotationPeriod").append_child(pugi::node_pcdata).set_value(std::to_string(objects[i].rotationPeriod.value).c_str());
+		objectNode.append_child("AxialTilt").append_child(pugi::node_pcdata).set_value(std::to_string(objects[i].axialTilt.value).c_str());
 
 		pugi::xml_node position = objectNode.append_child("Position");
 		pugi::xml_node velocity = objectNode.append_child("Velocity");
@@ -111,12 +116,20 @@ void Physics::step(float dt) {
 	if (dt == 0)
 		return;
 
+	std::vector<PhysObject> currentObjects = computedData[dataIndex];
 	switch (selectedAlgorithm) {
-	case VELOCITY_VERLET:
-	case RUNGE_KUTTA:
-	case RK_ADAPTIVE_STEPSIZE:
-		velocityVerlet(dt);
+		case VELOCITY_VERLET:
+		case RUNGE_KUTTA:
+		case RK_ADAPTIVE_STEPSIZE:
+			velocityVerlet(dt, &currentObjects);
 	}
+
+	for (int i = 0; i < currentObjects.size(); i++) {
+		currentObjects[i].rotationDegrees += dt * 360.0f / currentObjects[i].rotationPeriod.GetBaseValue();
+	}
+
+	computedData.push_back(currentObjects);
+	dataIndex++;
 
 	time += dt;
 }
@@ -126,23 +139,23 @@ std::vector<PhysObject> Physics::getCurrentObjects() {
 }
 
 #//returns 2d vector containing the net acceleration on each object
-std::vector<std::vector<float>> Physics::getAccelerations(std::vector<PhysObject> objects) {
-	if (objects.empty())
-		objects = computedData[dataIndex];
+std::vector<std::vector<float>> Physics::getAccelerations(std::vector<PhysObject> * objects) {
+	if (objects->empty())
+		*objects = computedData[dataIndex];
 
 	std::vector<std::vector<float>> accelerations = {};
-	for (int i = 0; i < objects.size(); i++) {
+	for (int i = 0; i < objects->size(); i++) {
 		std::vector<float> acceleration = { 0,0,0 };
-		for (int j = 0; j < objects.size(); j++) {
+		for (int j = 0; j < objects->size(); j++) {
 			if (i != j) {
 				float x1[3], x2[3];
-				std::copy(std::begin(objects[i].position.value), std::end(objects[i].position.value), std::begin(x1));
-				std::copy(std::begin(objects[j].position.value), std::end(objects[j].position.value), std::begin(x2));
+				std::copy(std::begin((*objects)[i].position.value), std::end((*objects)[i].position.value), std::begin(x1));
+				std::copy(std::begin((*objects)[j].position.value), std::end((*objects)[j].position.value), std::begin(x2));
 
 				float r = sqrt(pow(x1[0] - x2[0], 2) + pow(x1[1] - x2[1], 2) + pow(x1[2] - x2[2], 2));
 				float rUnit[3] = { (x1[0] - x2[0]) / r, (x1[1] - x2[1]) / r, (x1[2] - x2[2]) / r };
 				for (int k = 0; k < 3; k++)
-					acceleration[k] += -G * objects[j].mass.value * rUnit[k] / pow(r, 2);
+					acceleration[k] += -G * (*objects)[j].mass.value * rUnit[k] / pow(r, 2);
 			}
 		}
 		accelerations.push_back(acceleration);
@@ -210,31 +223,27 @@ void Physics::updatePaths(bool firstFrame) {
 }
 
 //source: http://physics.ucsc.edu/~peter/242/leapfrog.pdf
-void Physics::velocityVerlet(float dt) {
-	std::vector<PhysObject> currentObjects = computedData[dataIndex];
-	std::vector<std::map<std::string, int> > originalUnits = Physics::ConvertObjectsToBaseUnits(&currentObjects);
+void Physics::velocityVerlet(float dt, std::vector<PhysObject> * currentObjects) {
+	std::vector<std::map<std::string, int> > originalUnits = Physics::ConvertObjectsToBaseUnits(currentObjects);
 	std::vector<std::vector<float>> accelerations = getAccelerations(currentObjects);
 
-	for (int i = 0; i < currentObjects.size(); i++) {
+	for (int i = 0; i < currentObjects->size(); i++) {
 		for (int j = 0; j < 3; j++) {
 			//get velocities of objects at + 1/2 timestep.
-			currentObjects[i].velocity.value[j] += .5 * dt * accelerations[i][j];
+			(*currentObjects)[i].velocity.value[j] += .5 * dt * accelerations[i][j];
 			//get position at +1 timestep, using velocity at half timestep
-			currentObjects[i].position.value[j] += dt * currentObjects[i].velocity.value[j];
+			(*currentObjects)[i].position.value[j] += dt * (*currentObjects)[i].velocity.value[j];
 		}
 	}
 
 	accelerations = getAccelerations(currentObjects);
-	for (int i = 0; i < currentObjects.size(); i++) {
+	for (int i = 0; i < currentObjects->size(); i++) {
 		for (int j = 0; j < 3; j++) {
-			currentObjects[i].velocity.value[j] += .5 * dt * accelerations[i][j];
+			(*currentObjects)[i].velocity.value[j] += .5 * dt * accelerations[i][j];
 		}
 	}
 
-	Physics::ConvertObjectsToUnits(&currentObjects, originalUnits);
-
-	computedData.push_back(currentObjects);
-	dataIndex++;
+	Physics::ConvertObjectsToUnits(currentObjects, originalUnits);
 }
 
 std::vector<std::string> Physics::GetObjectNames() {

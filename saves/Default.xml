@@ -1,12 +1,14 @@
 <?xml version="1.0" ?>
 <SavedState>
 	<GeneralSettings/>
-	<Simulation>
+	<Physics>
 		<Time>0.0</Time>
 		<Objects>
-			<Object>
+			<PhysObject>
 				<Name>Sun</Name>
 				<Mass>1.9890000000000002e+30</Mass>
+				<RotationPeriod>25.38</RotationPeriod>
+				<AxialTilt>7.25</AxialTilt>				
 				<Position>
 					<x>-1.06800064830182</x>
 					<y>-0.41768021256849297</y>
@@ -24,10 +26,12 @@
 					<Texture>sun</Texture>
 				</Settings>
 				<Radius>.6957</Radius>
-			</Object>
-			<Object>
+			</PhysObject>
+			<PhysObject>
 				<Name>Mercury</Name>
 				<Mass>3.285e+23</Mass>
+				<RotationPeriod>58.642</RotationPeriod>
+				<AxialTilt>.01</AxialTilt>					
 				<Position>
 					<x>-22.12062175862221</x>
 					<y>-66.82431829610253</y>
@@ -45,10 +49,12 @@
 					<Texture>mercury</Texture>					
 				</Settings>
 				<Radius>.0024397</Radius>
-			</Object>
-			<Object>
+			</PhysObject>
+			<PhysObject>
 				<Name>Venus</Name>
 				<Mass>4.867e+24</Mass>
+				<RotationPeriod>-243.0187</RotationPeriod>
+				<AxialTilt>177.4</AxialTilt>		
 				<Position>
 					<x>-108.5735509178141</x>
 					<y>-3.784200933160055</y>
@@ -66,10 +72,12 @@
 					<Texture>venus</Texture>
 				</Settings>
 				<Radius>.0060518</Radius>
-			</Object>
-			<Object>
+			</PhysObject>
+			<PhysObject>
 				<Name>Earth</Name>
 				<Mass>5.972e+24</Mass>
+				<RotationPeriod>1.0</RotationPeriod>
+				<AxialTilt>23.44</AxialTilt>	
 				<Position>
 					<x>-26.2789292868248</x>
 					<y>144.5102393586391</y>
@@ -87,10 +95,12 @@
 					<Texture>earth</Texture>
 				</Settings>
 				<Radius>.00637</Radius>
-			</Object>
-			<Object>
+			</PhysObject>
+			<PhysObject>
 				<Name>Mars</Name>
 				<Mass>6.39e+23</Mass>
+				<RotationPeriod>1.026</RotationPeriod>
+				<AxialTilt>25.19</AxialTilt>	
 				<Position>
 					<x>206.9270543147017</x>
 					<y>-3.5606897452390878</y>
@@ -108,10 +118,12 @@
 					<Texture>mars</Texture>
 				</Settings>
 				<Radius>.0033895</Radius>
-			</Object>
-			<Object>
+			</PhysObject>
+			<PhysObject>
 				<Name>Moon</Name>
 				<Mass>7.3476e+22</Mass>
+				<RotationPeriod>27.32</RotationPeriod>
+				<AxialTilt>1.5424</AxialTilt>					
 				<Position>
 					<x>-26.59657952880802</x>
 					<y>144.2683561835989</y>
@@ -129,10 +141,12 @@
 					<Texture>moon</Texture>
 				</Settings>
 				<Radius>.0017371</Radius>
-			</Object>
-			<Object>
+			</PhysObject>
+			<PhysObject>
 				<Name>Jupiter</Name>
 				<Mass>1.898e+27</Mass>
+				<RotationPeriod>.41</RotationPeriod>
+				<AxialTilt>3.13</AxialTilt>	
 				<Position>
 					<x>597.8411588490014</x>
 					<y>438.7049129404825</y>
@@ -150,8 +164,8 @@
 					<Texture>jupiter</Texture>
 				</Settings>
 				<Radius>.069911</Radius>
-			</Object>
-			<Object>
+			</PhysObject>
+			<PhysObject>
 				<Name>Io</Name>
 				<Mass>8.932e+22</Mass>
 				<Position>
@@ -170,8 +184,8 @@
 					<Color>0.5843137254901961, 0.5254901960784314, 0.47058823529411764</Color>
 				</Settings>
 				<Radius>.0018216</Radius>
-			</Object>
-			<Object>
+			</PhysObject>
+			<PhysObject>
 				<Name>Europa</Name>
 				<Mass>4.799e+22</Mass>
 				<Position>
@@ -190,8 +204,8 @@
 					<Color>0.06666666666666667, 0.0, 1.0</Color>
 				</Settings>
 				<Radius>.0015608</Radius>
-			</Object>
-			<Object>
+			</PhysObject>
+			<PhysObject>
 				<Name>Ganymede</Name>
 				<Mass>1.482e+23</Mass>
 				<Position>
@@ -210,8 +224,8 @@
 					<Color>0.6274509803921569, 0.3803921568627451, 1.0</Color>
 				</Settings>
 				<Radius>.0026341</Radius>
-			</Object>
-			<Object>
+			</PhysObject>
+			<PhysObject>
 				<Name>Callisto</Name>
 				<Mass>1.076e+23</Mass>
 				<Position>
@@ -230,10 +244,12 @@
 					<Color>1.0, 0.5333333333333333, 0.14901960784313725</Color>
 				</Settings>
 				<Radius>.0024103</Radius>
-			</Object>
-			<Object>
+			</PhysObject>
+			<PhysObject>
 				<Name>Saturn</Name>
 				<Mass>5.683e+26</Mass>
+				<RotationPeriod>.426</RotationPeriod>
+				<AxialTilt>26.73</AxialTilt>	
 				<Position>
 					<x>957.6383363062741</x>
 					<y>982.147530520502</y>
@@ -251,10 +267,12 @@
 					<Texture>saturn</Texture>
 				</Settings>
 				<Radius>.058232</Radius>
-			</Object>
-			<Object>
+			</PhysObject>
+			<PhysObject>
 				<Name>Uranus</Name>
 				<Mass>8.681e+25</Mass>
+				<RotationPeriod>-.71833</RotationPeriod>
+				<AxialTilt>97.77</AxialTilt>	
 				<Position>
 					<x>2157.706702828831</x>
 					<y>-2055.242911807622</y>
@@ -272,10 +290,12 @@
 					<Texture>uranus</Texture>
 				</Settings>
 				<Radius>.025559</Radius>
-			</Object>
-			<Object>
+			</PhysObject>
+			<PhysObject>
 				<Name>Neptune</Name>
 				<Mass>1.024e+26</Mass>
+				<RotationPeriod>.67125</RotationPeriod>
+				<AxialTilt>28.32</AxialTilt>	
 				<Position>
 					<x>2513.785419503203</x>
 					<y>-3739.26509257682</y>
@@ -293,10 +313,12 @@
 					<Texture>neptune</Texture>
 				</Settings>
 				<Radius>.024622</Radius>
-			</Object>
-			<Object>
+			</PhysObject>
+			<PhysObject>
 				<Name>Pluto</Name>
 				<Mass>1.309e+22</Mass>
+				<RotationPeriod>-6.387</RotationPeriod>
+				<AxialTilt>119.61</AxialTilt>	
 				<Position>
 					<x>-1478.6263407246781</x>
 					<y>-4182.878118662979</y>
@@ -314,7 +336,7 @@
 					<Texture>pluto</Texture>
 				</Settings>
 				<Radius>.0011899</Radius>
-			</Object>
+			</PhysObject>
 		</Objects>
-	</Simulation>
+	</Physics>
 </SavedState>

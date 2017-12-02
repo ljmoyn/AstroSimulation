@@ -9,7 +9,7 @@
 class PhysObject
 {
 public:
-	PhysObject(std::string Name, float Mass, float Position[3], float Velocity[3], float Radius);
+	PhysObject(std::string Name, float Mass, float Position[3], float Velocity[3], float Radius, float rotationPeriod, float axialTilt);
 	~PhysObject();
 	PhysObject() {};
 
@@ -23,7 +23,12 @@ public:
 	ValueWithUnits<UnitType::Mass> mass;
 	ValueWithUnits3<UnitType::Distance> position;
 	ValueWithUnits3<UnitType::Velocity> velocity;
+	//a.k.a. obliquity
+	ValueWithUnits<UnitType::Angle> axialTilt;
 
+	ValueWithUnits<UnitType::Time> rotationPeriod;
+	//amount to rotate object model, based on current timestep and period
+	float rotationDegrees;
 private:
 
 };

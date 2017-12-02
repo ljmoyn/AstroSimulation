@@ -531,8 +531,10 @@ void Graphics::GetVertexAttributeData(bool drawAsPoint, std::vector<GLfloat>* po
 
 			if (!drawAsPoint) {
 				textureIndices->push_back(drawAsPoint ? -1 : physics->objectSettings[i].textureIndex);
-
+				instanceModel = glm::rotate(instanceModel, glm::radians(objects[i].axialTilt.GetBaseValue()), glm::vec3(1.f, 0.f, 0.f));
+				instanceModel = glm::rotate(instanceModel, glm::radians(objects[i].rotationDegrees), glm::vec3(0.f, 0.f, 1.f));
 				instanceModel = glm::rotate(instanceModel, glm::radians(270.0f), glm::vec3(1.f, 0.f, 0.f));
+
 				instanceModels->push_back(instanceModel);
 			}
 

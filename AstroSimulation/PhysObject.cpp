@@ -1,7 +1,10 @@
 #include "PhysObject.h"
 
-PhysObject::PhysObject(std::string Name, float Mass, float Position[3], float Velocity[3], float Radius)
-	: name(Name), mass(Mass, 0), position(Position, 2), velocity(Velocity, 4), radius(Radius, 2){}
+PhysObject::PhysObject(std::string Name, float Mass, float Position[3], float Velocity[3], float Radius, float RotationPeriod, float AxialTilt)
+	: name(Name), mass(Mass, 0), position(Position, 2), velocity(Velocity, 4), radius(Radius, 2), rotationPeriod(RotationPeriod, 2), axialTilt(AxialTilt, 1) 
+{
+	rotationDegrees = 0.0f;
+}
 
 PhysObject::~PhysObject()
 {

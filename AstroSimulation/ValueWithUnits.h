@@ -3,7 +3,7 @@
 
 #include <vector>
 
-enum class UnitType { Time, Distance, Velocity, Mass };
+enum class UnitType { Time, Distance, Velocity, Mass, Angle };
 
 struct UnitData {
 	//Conversions to base units, which are used in all algorithmic calculations: Years, Kg, Gigameters 
@@ -40,6 +40,12 @@ struct UnitData {
 		1.0f, // Gm / Yr
 		2.99792458f * powf(10,8) * 60.0f * 60.0f * 24.0f * 365.0f / powf(10,9), //c
 	};
+
+	const char* angleUnits[6] = { "Pi Radians", "Degrees" };
+	const float angleConversions[6] = {
+		180.0f, //convert Pi * Radians -----> degrees
+		1.0f // Degrees
+	};
 };
 
 
@@ -62,6 +68,8 @@ public:
 			return value * unitData.massConversions[unitIndex];
 		case UnitType::Time:
 			return value * unitData.timeConversions[unitIndex];
+		case UnitType::Angle:
+			return value * unitData.angleConversions[unitIndex];
 		}
 	}
 
@@ -83,7 +91,11 @@ public:
 		case UnitType::Time:
 			unitIndex = 0;
 			break;
+		case UnitType::Angle:
+			unitIndex = 1;
+			break;
 		}
+
 	}
 
 	void ConvertToUnits(int i) 
@@ -102,6 +114,9 @@ public:
 			break;
 		case UnitType::Time:
 			value /= unitData.timeConversions[i];
+			break;
+		case UnitType::Angle:
+			value /= unitData.angleConversions[i];
 			break;
 		}
 
@@ -149,6 +164,9 @@ public:
 			case UnitType::Time:
 				result[i] = value[i] * unitData.timeConversions[unitIndex];
 				break;
+			case UnitType::Angle:
+				result[i] = value[i] * unitData.angleConversions[unitIndex];
+				break;
 			}
 		}
 	}
@@ -165,6 +183,8 @@ public:
 			return value[i] * unitData.massConversions[unitIndex];
 		case UnitType::Time:
 			return value[i] * unitData.timeConversions[unitIndex];
+		case UnitType::Angle:
+			return value[i] * unitData.angleConversions[unitIndex];
 		}
 	}
 
@@ -186,6 +206,9 @@ public:
 		case UnitType::Time:
 			unitIndex = 2;
 			break;
+		case UnitType::Angle:
+			unitIndex = 1;
+			break;
 		}
 	}
 
@@ -206,6 +229,9 @@ public:
 				break;
 			case UnitType::Time:
 				value[j] /= unitData.timeConversions[i];
+				break;
+			case UnitType::Angle:
+				value[j] /= unitData.angleConversions[i];
 				break;
 			}
 		}
