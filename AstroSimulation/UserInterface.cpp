@@ -305,7 +305,12 @@ void UserInterface::ShowMainUi(Physics* physics, Camera* camera, float* xTransla
 
 		int totalTimesteps = round(physics->totalTime.GetBaseValue() / physics->timestep.GetBaseValue());
 		ImGui::PushItemWidth(300);
-		for (int i = 0; i < physics->getCurrentObjects().size(); i++) {
+
+		std::vector<PhysObject> objects = physics->getCurrentObjects();
+		std::list<PhysObject> objectsList(objects.begin(), objects.end());
+		ObjectsTree(objectsList);
+
+		for (int i = 0; i < objects.size(); i++) {
 			PhysObject currentObject = physics->computedData[physics->dataIndex][i];
 			if (ImGui::CollapsingHeader(currentObject.name.c_str()))
 			{
@@ -505,4 +510,52 @@ std::vector<std::string> UserInterface::GetAllFoldersInFolder(std::string folder
 		::FindClose(hFind);
 	}
 	return names;
+}
+
+void UserInterface::ObjectsTree(std::list<PhysObject> objects)
+{
+	std::list<PhysObject>::iterator objectItr = objects.begin();
+	while (objects.size() > 0 && objectItr != objects.end()) 
+	{
+		if (objectItr->satellites.size() > 0) 
+		{
+			std::list<PhysObject> satelliteObjects = {};
+			std::vector<std::string>::const_iterator satelliteItr = objectItr->satellites.begin();
+
+			for (std::vector<std::string>::const_iterator satelliteItr = objectItr->satellites.begin(); satelliteItr != objectItr->satellites.end(); satelliteItr++)
+			{
+
+				std::string satelliteName = *satelliteItr;
+				//https://stackoverflow.com/questions/15517991/search-a-vector-of-objects-by-object-attribute
+				auto matchItr = std::find_if(objects.begin(), objects.end(), [&satelliteName](const PhysObject& obj) {return obj.name == satelliteName; });
+				if (matchItr != objects.end())
+				{
+					satelliteObjects.push_back(*matchItr);
+					if (std::distance(objects.begin(), matchItr) < std::distance(objects.begin(), objectItr)) 
+					{
+						objects.erase(matchItr);
+						objectItr++;
+					}
+					else
+					{
+						objects.erase(matchItr);
+					}
+				}
+			}
+			if (ImGui::TreeNode(objectItr->name.c_str()))
+			{
+				ObjectsTree(satelliteObjects);
+				ImGui::TreePop();
+			}
+		}
+		else 
+		{
+			if (ImGui::TreeNode(objectItr->name.c_str()))
+			{
+				ImGui::TreePop();
+			}
+		}
+
+		objectItr++;
+	}
 }

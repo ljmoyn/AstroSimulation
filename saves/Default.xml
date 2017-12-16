@@ -95,6 +95,7 @@
 					<Texture>earth</Texture>
 				</Settings>
 				<Radius>.00637</Radius>
+				<Satellites>Moon</Satellites>
 			</PhysObject>
 			<PhysObject>
 				<Name>Mars</Name>
@@ -164,6 +165,7 @@
 					<Texture>jupiter</Texture>
 				</Settings>
 				<Radius>.069911</Radius>
+				<Satellites>Io,Europa,Ganymede,Callisto</Satellites>
 			</PhysObject>
 			<PhysObject>
 				<Name>Io</Name>

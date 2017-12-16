@@ -5,6 +5,8 @@
 #include "Physics.h"
 #include "Camera.h"
 
+#include <list>
+
 class UserInterface
 {
 public:
@@ -39,5 +41,6 @@ private:
 	void TopLeftOverlay(Physics* physics);
 	void SavePopup(Physics* physics);
 	void MenuBar(Physics* physics);
+	void ObjectsTree(std::list<PhysObject> physics);
 };
 #endif

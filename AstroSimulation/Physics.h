@@ -61,6 +61,7 @@ public:
 	const char* algorithms[3] = { "Velocity Verlet", "Runge Kutta 4", "RK45 with Adaptive Stepsize" };
 
 private:
+	static std::vector<std::string> SplitString(std::string str, std::string delimiter);
 	const float G = 9.94519 * pow(10, 14) * 6.67408 * pow(10, -11) / pow(pow(10, 9), 3);
 
 };

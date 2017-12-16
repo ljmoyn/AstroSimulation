@@ -9,7 +9,7 @@
 class PhysObject
 {
 public:
-	PhysObject(std::string Name, float Mass, float Position[3], float Velocity[3], float Radius, float rotationPeriod, float axialTilt);
+	PhysObject(std::string Name, float Mass, float Position[3], float Velocity[3], float Radius, float rotationPeriod, float axialTilt, std::vector<std::string> satellites);
 	~PhysObject();
 	PhysObject() {};
 
@@ -25,6 +25,9 @@ public:
 	ValueWithUnits3<UnitType::Velocity> velocity;
 	//a.k.a. obliquity
 	ValueWithUnits<UnitType::Angle> axialTilt;
+
+	//Name of major object that this is orbiting. Used to organize the list of objects in the ui 
+	std::vector<std::string> satellites;
 
 	ValueWithUnits<UnitType::Time> rotationPeriod;
 	//amount to rotate object model, based on current timestep and period

@@ -8,6 +8,26 @@ Physics::~Physics()
 {
 }
 
+//https://stackoverflow.com/questions/14265581/parse-split-a-string-in-c-using-string-delimiter-standard-c
+std::vector<std::string> Physics::SplitString(std::string str, std::string delimiter)
+{
+	std::vector<std::string> output = {};
+	if (str == "")
+		return output;
+
+	size_t pos = 0;
+	std::string token;
+	while ((pos = str.find(delimiter)) != std::string::npos) {
+		token = str.substr(0, pos);
+		output.push_back(token);
+		str.erase(0, pos + delimiter.length());
+	}
+
+	output.push_back(str);
+
+	return output;
+}
+
 void Physics::FromXml(Physics *physics, std::string filename, std::vector<std::string> textureFolders)
 {
 	physics->playbackSpeed = 1;
@@ -21,6 +41,11 @@ void Physics::FromXml(Physics *physics, std::string filename, std::vector<std::s
 	for (auto currentObjectNode : doc.select_nodes("/SavedState/Physics/Objects/PhysObject"))
 	{
 		std::string name = currentObjectNode.node().child("Name").text().as_string();
+
+		//TODO: add check in case satellite object comes before its parent. Should move that object to the end of the list
+		std::string satellitesStr = currentObjectNode.node().child("Satellites").text().as_string();
+		std::vector<std::string> satellites = SplitString(satellitesStr, ",");
+
 		float mass = currentObjectNode.node().child("Mass").text().as_float();
 		float rotationPeriod = currentObjectNode.node().child("RotationPeriod").text().as_float();
 		float axialTilt = currentObjectNode.node().child("AxialTilt").text().as_float();
@@ -56,7 +81,7 @@ void Physics::FromXml(Physics *physics, std::string filename, std::vector<std::s
 		}
 
 		ObjectSettings settings(showHistory, displayType, colorString, textureIndex);
-		PhysObject currentObject(name, mass, position, velocity, radius, rotationPeriod, axialTilt);
+		PhysObject currentObject(name, mass, position, velocity, radius, rotationPeriod, axialTilt, satellites);
 
 		objects.push_back(currentObject);
 		physics->objectSettings.push_back(settings);
@@ -107,6 +132,18 @@ void Physics::ToXml(Physics physics, std::string filename) {
 			std::to_string(physics.objectSettings[i].color[1]) + "," +
 			std::to_string(physics.objectSettings[i].color[2]);
 		settings.append_child("Color").append_child(pugi::node_pcdata).set_value(colorString.c_str());
+
+		if (objects[i].satellites.size() > 0)
+		{
+			std::string satellites = "";
+			for (int j = 0; j < objects[i].satellites.size(); j++)
+			{
+				if (j != 0)
+					satellites += ",";
+				satellites += objects[i].satellites[j];
+			}
+			objectNode.append_child("Satellites").append_child(pugi::node_pcdata).set_value(satellites.c_str());
+		}
 	}
 
 	xml.save_file(filename.c_str());
