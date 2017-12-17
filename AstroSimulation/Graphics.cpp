@@ -11,8 +11,8 @@ Graphics::Graphics()
 
 	// Create a GLFWwindow and setup viewport
 	const GLFWvidmode * mode = glfwGetVideoMode(glfwGetPrimaryMonitor());
-	width = (mode->width) * 2 / 3;
-	height = (mode->height) * 2 / 3;
+	width = (mode->width) * .95;
+	height = (mode->height) * .95;
 	window = glfwCreateWindow(width, height, "Astro Simulation", nullptr, nullptr);
 	glfwMakeContextCurrent(window);
 	glViewport(0, 0, width, height);

@@ -7,6 +7,7 @@ Simulation::Simulation(std::string physicsSource)
 
 	// get physics data
 	Physics::FromXml(&physics, physicsSource, userInterface.textureFolders);
+	userInterface.InitObjectDataWindows(physics.getCurrentObjects());
 
 	for (int i = 0; i < physics.getCurrentObjects().size(); i++)
 		physics.paths.push_back({});

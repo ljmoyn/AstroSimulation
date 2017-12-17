@@ -13,6 +13,9 @@ void UserInterface::InitUserInterface(GLFWwindow * window)
 	std::fill(selected.begin(), selected.end(), false);
 	if (!selected.empty())
 		selected[0] = true;
+
+	ImGuiWindowFlags window_flags = 0;
+	window_flags |= ImGuiWindowFlags_ShowBorders;
 }
 
 bool UserInterface::DataTypeApplyOpFromTextScientific(const char* buf, const char* initial_value_buf, ImGuiDataType data_type, void* data_ptr, const char* scalar_format)
@@ -254,9 +257,6 @@ void UserInterface::MenuBar(Physics* physics) {
 
 void UserInterface::ShowMainUi(Physics* physics, Camera* camera, float* xTranslate, float* yTranslate, float* zTranslate)
 {
-	ImGuiWindowFlags window_flags = 0;
-	window_flags |= ImGuiWindowFlags_ShowBorders;
-
 	ImGuiStyle& style = ImGui::GetStyle();
 	style.Colors[ImGuiCol_PopupBg] = ImVec4(0.05f, 0.05f, 0.10f, 1.00f);
 	style.Colors[ImGuiCol_Border] = ImVec4{ 255,255,255,255 };
@@ -266,8 +266,16 @@ void UserInterface::ShowMainUi(Physics* physics, Camera* camera, float* xTransla
 	if (showTopLeftOverlay)
 		TopLeftOverlay(physics);
 
+	std::vector<PhysObject> objects = physics->getCurrentObjects();
+	for (int i = 0; i < physics->getCurrentObjects().size(); i++) 
+	{
+		std::string name = objects[i].name + "##DataWindow";
+		if (ShowDataWindow[name])
+			ObjectDataMenu(name, &ShowDataWindow[name]);
+	}
+
 	ImGui::SetNextWindowSize(ImVec2(500, 680), ImGuiSetCond_FirstUseEver);
-	if (!ImGui::Begin("Simulation Controls", &showMainWindow, window_flags))
+	if (!ImGui::Begin("Simulation Controls", &showMainWindow, WindowFlags))
 	{
 		// Early out if the window is collapsed, as an optimization.
 		ImGui::End();
@@ -306,7 +314,6 @@ void UserInterface::ShowMainUi(Physics* physics, Camera* camera, float* xTransla
 		int totalTimesteps = round(physics->totalTime.GetBaseValue() / physics->timestep.GetBaseValue());
 		ImGui::PushItemWidth(300);
 
-		std::vector<PhysObject> objects = physics->getCurrentObjects();
 		std::list<PhysObject> objectsList(objects.begin(), objects.end());
 		ObjectsTree(objectsList);
 
@@ -371,8 +378,7 @@ void UserInterface::ShowMainUi(Physics* physics, Camera* camera, float* xTransla
 
 			physics->temporaryIndex = physics->dataIndex;
 
-			std::vector<PhysObject> currentFrame = physics->getCurrentObjects();
-			physics->computedData = { currentFrame };
+			physics->computedData = { objects };
 			physics->dataIndex = 0;
 			physics->updatePaths(true);
 
@@ -517,9 +523,9 @@ void UserInterface::ObjectsTree(std::list<PhysObject> objects)
 	std::list<PhysObject>::iterator objectItr = objects.begin();
 	while (objects.size() > 0 && objectItr != objects.end()) 
 	{
+		std::list<PhysObject> satelliteObjects = {};
 		if (objectItr->satellites.size() > 0) 
 		{
-			std::list<PhysObject> satelliteObjects = {};
 			std::vector<std::string>::const_iterator satelliteItr = objectItr->satellites.begin();
 
 			for (std::vector<std::string>::const_iterator satelliteItr = objectItr->satellites.begin(); satelliteItr != objectItr->satellites.end(); satelliteItr++)
@@ -542,20 +548,47 @@ void UserInterface::ObjectsTree(std::list<PhysObject> objects)
 					}
 				}
 			}
-			if (ImGui::TreeNode(objectItr->name.c_str()))
-			{
-				ObjectsTree(satelliteObjects);
-				ImGui::TreePop();
-			}
-		}
-		else 
-		{
-			if (ImGui::TreeNode(objectItr->name.c_str()))
-			{
-				ImGui::TreePop();
-			}
 		}
 
+		ObjectsTreeNode(objectItr->name, satelliteObjects);
 		objectItr++;
+	}
+}
+
+void UserInterface::ObjectDataMenu(std::string name, bool * open)
+{
+	ImGui::SetNextWindowSize(ImVec2(500, 440), ImGuiSetCond_FirstUseEver);
+	if (ImGui::Begin(name.c_str(), open, WindowFlags))
+	{
+
+
+	}
+	ImGui::End();
+
+}
+
+void UserInterface::InitObjectDataWindows(std::vector<PhysObject> objects)
+{
+	for (int i = 0; i < objects.size(); i++)
+	{
+		ShowDataWindow.insert(std::pair<std::string, bool>(objects[i].name + "##DataWindow", false));
+	}
+}
+
+void UserInterface::ObjectsTreeNode(std::string name, std::list<PhysObject> satelliteObjects)
+{
+	if (ImGui::TreeNode(name.c_str()))
+	{
+		if (ImGui::Button("Data", ImVec2(100, 0)))
+		{
+			ShowDataWindow[name + "##DataWindow"] = true;
+		}
+
+		if (satelliteObjects.size() > 0)
+		{
+			ObjectsTree(satelliteObjects);
+		}
+
+		ImGui::TreePop();
 	}
 }
