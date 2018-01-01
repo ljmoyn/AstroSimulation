@@ -15,7 +15,6 @@ void UserInterface::InitUserInterface(GLFWwindow * window)
 		selected[0] = true;
 
 	WindowFlags = 0;
-	WindowFlags |= ImGuiWindowFlags_ShowBorders;
 	WindowFlags |= ImGuiWindowFlags_AlwaysAutoResize;
 }
 
