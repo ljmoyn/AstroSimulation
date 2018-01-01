@@ -47,6 +47,6 @@ private:
 	void MenuBar(Physics* physics);
 	void ObjectsTree(std::list<PhysObject> objects);
 	void ObjectsTreeNode(std::string name, std::list<PhysObject> satelliteObjects);
-	void ObjectDataMenu(std::string name, bool* open);
+	void ObjectDataWindows(Physics * physics);
 };
 #endif

@@ -14,8 +14,9 @@ void UserInterface::InitUserInterface(GLFWwindow * window)
 	if (!selected.empty())
 		selected[0] = true;
 
-	ImGuiWindowFlags window_flags = 0;
-	window_flags |= ImGuiWindowFlags_ShowBorders;
+	WindowFlags = 0;
+	WindowFlags |= ImGuiWindowFlags_ShowBorders;
+	WindowFlags |= ImGuiWindowFlags_AlwaysAutoResize;
 }
 
 bool UserInterface::DataTypeApplyOpFromTextScientific(const char* buf, const char* initial_value_buf, ImGuiDataType data_type, void* data_ptr, const char* scalar_format)
@@ -266,13 +267,7 @@ void UserInterface::ShowMainUi(Physics* physics, Camera* camera, float* xTransla
 	if (showTopLeftOverlay)
 		TopLeftOverlay(physics);
 
-	std::vector<PhysObject> objects = physics->getCurrentObjects();
-	for (int i = 0; i < physics->getCurrentObjects().size(); i++) 
-	{
-		std::string name = objects[i].name + "##DataWindow";
-		if (ShowDataWindow[name])
-			ObjectDataMenu(name, &ShowDataWindow[name]);
-	}
+	ObjectDataWindows(physics);
 
 	ImGui::SetNextWindowSize(ImVec2(500, 680), ImGuiSetCond_FirstUseEver);
 	if (!ImGui::Begin("Simulation Controls", &showMainWindow, WindowFlags))
@@ -314,61 +309,9 @@ void UserInterface::ShowMainUi(Physics* physics, Camera* camera, float* xTransla
 		int totalTimesteps = round(physics->totalTime.GetBaseValue() / physics->timestep.GetBaseValue());
 		ImGui::PushItemWidth(300);
 
+		std::vector<PhysObject> objects = physics->getCurrentObjects();
 		std::list<PhysObject> objectsList(objects.begin(), objects.end());
 		ObjectsTree(objectsList);
-
-		for (int i = 0; i < objects.size(); i++) {
-			PhysObject currentObject = physics->computedData[physics->dataIndex][i];
-			if (ImGui::CollapsingHeader(currentObject.name.c_str()))
-			{
-				ImGui::AlignFirstTextHeightToWidgets();
-				ImGui::Text("Mass    "); ImGui::SameLine();
-				bool massChanged = InputScientific(("##Mass" + currentObject.name).c_str(), &physics->computedData[physics->dataIndex][i].mass.value);
-
-				//default spacing between units and entry boxes is inconsistent form some reason, so have to hardcode position on the line. Sad.
-				ImGui::SameLine(375.0f); ImGui::PushItemWidth(120);
-				bool massUnitsChanged = UnitCombo<UnitType::Mass>("##Mass" + currentObject.name, &physics->computedData[physics->dataIndex][i].mass);
-				ImGui::PopItemWidth();
-
-				ImGui::AlignFirstTextHeightToWidgets();
-				ImGui::Text("Position"); ImGui::SameLine();
-				bool positionChanged = ImGui::InputFloat3(("##Position " + currentObject.name).c_str(), &physics->computedData[physics->dataIndex][i].position.value[0]);
-
-				ImGui::SameLine(375.0f); ImGui::PushItemWidth(120);
-				bool positionUnitsChanged = UnitCombo3<UnitType::Distance>("##PositionUnits" + currentObject.name, &physics->computedData[physics->dataIndex][i].position);
-				ImGui::PopItemWidth();
-
-				ImGui::AlignFirstTextHeightToWidgets();
-				ImGui::Text("Velocity"); ImGui::SameLine();
-				bool velocityChanged = ImGui::InputFloat3(("##Velocity " + currentObject.name).c_str(), &physics->computedData[physics->dataIndex][i].velocity.value[0]);
-
-				ImGui::SameLine(375.0f); ImGui::PushItemWidth(120);
-				bool velocityUnitsChanged = UnitCombo3<UnitType::Velocity>("##VelocityUnits" + currentObject.name, &physics->computedData[physics->dataIndex][i].velocity);
-				ImGui::PopItemWidth();
-
-				if (!isPaused && (massChanged || positionChanged || velocityChanged))
-					isPaused = true;
-
-				if (massUnitsChanged || positionUnitsChanged || velocityUnitsChanged) {
-					for (int j = 0; j < physics->computedData.size(); j++) {
-						if (massUnitsChanged) {
-							int newMassUnit = physics->computedData[physics->dataIndex][i].mass.unitIndex;
-							physics->computedData[j][i].mass.ConvertToUnits(newMassUnit);
-						}
-
-						if (positionUnitsChanged) {
-							int newPositionUnit = physics->computedData[physics->dataIndex][i].position.unitIndex;
-							physics->computedData[j][i].position.ConvertToUnits(newPositionUnit);
-						}
-
-						if (velocityUnitsChanged) {
-							int newVelocityUnit = physics->computedData[physics->dataIndex][i].velocity.unitIndex;
-							physics->computedData[j][i].velocity.ConvertToUnits(newVelocityUnit);
-						}
-					}
-				}
-			}
-		}
 
 		if (ImGui::Button("Compute", ImVec2(ImGui::GetWindowContentRegionWidth(), 30)))
 		{
@@ -555,16 +498,73 @@ void UserInterface::ObjectsTree(std::list<PhysObject> objects)
 	}
 }
 
-void UserInterface::ObjectDataMenu(std::string name, bool * open)
+void UserInterface::ObjectDataWindows(Physics * physics)
 {
-	ImGui::SetNextWindowSize(ImVec2(500, 440), ImGuiSetCond_FirstUseEver);
-	if (ImGui::Begin(name.c_str(), open, WindowFlags))
+
+	std::vector<PhysObject> objects = physics->getCurrentObjects();
+	for (int i = 0; i < objects.size(); i++)
 	{
+		std::string name = objects[i].name;
+		std::string windowId = objects[i].name + "##DataWindow";
+		if (ShowDataWindow[windowId])
+		{
+			ImGui::SetNextWindowSize(ImVec2(500, 440), ImGuiSetCond_FirstUseEver);
+			if (ImGui::Begin(windowId.c_str(), &(ShowDataWindow[windowId]), WindowFlags))
+			{
+				ImGui::AlignFirstTextHeightToWidgets();
 
+				//width for the data inputs
+				ImGui::PushItemWidth(300);
 
+				ImGui::Text("Mass    "); ImGui::SameLine();
+				bool massChanged = InputScientific(("##Mass" + name).c_str(), &physics->computedData[physics->dataIndex][i].mass.value);
+
+				//default spacing between units and entry boxes is inconsistent form some reason, so have to hardcode position on the line. Sad.
+				ImGui::SameLine(375.0f); ImGui::PushItemWidth(120);
+				bool massUnitsChanged = UnitCombo<UnitType::Mass>("##Mass" + name, &physics->computedData[physics->dataIndex][i].mass);
+				ImGui::PopItemWidth();
+
+				ImGui::AlignFirstTextHeightToWidgets();
+				ImGui::Text("Position"); ImGui::SameLine();
+				bool positionChanged = ImGui::InputFloat3(("##Position " + name).c_str(), &physics->computedData[physics->dataIndex][i].position.value[0]);
+
+				ImGui::SameLine(375.0f); ImGui::PushItemWidth(120);
+				bool positionUnitsChanged = UnitCombo3<UnitType::Distance>("##PositionUnits" + name, &physics->computedData[physics->dataIndex][i].position);
+				ImGui::PopItemWidth();
+
+				ImGui::AlignFirstTextHeightToWidgets();
+				ImGui::Text("Velocity"); ImGui::SameLine();
+				bool velocityChanged = ImGui::InputFloat3(("##Velocity " + name).c_str(), &physics->computedData[physics->dataIndex][i].velocity.value[0]);
+
+				ImGui::SameLine(375.0f); ImGui::PushItemWidth(120);
+				bool velocityUnitsChanged = UnitCombo3<UnitType::Velocity>("##VelocityUnits" + name, &physics->computedData[physics->dataIndex][i].velocity);
+				ImGui::PopItemWidth();
+
+				if (!isPaused && (massChanged || positionChanged || velocityChanged))
+					isPaused = true;
+
+				if (massUnitsChanged || positionUnitsChanged || velocityUnitsChanged) {
+					for (int j = 0; j < physics->computedData.size(); j++) {
+						if (massUnitsChanged) {
+							int newMassUnit = physics->computedData[physics->dataIndex][i].mass.unitIndex;
+							physics->computedData[j][i].mass.ConvertToUnits(newMassUnit);
+						}
+
+						if (positionUnitsChanged) {
+							int newPositionUnit = physics->computedData[physics->dataIndex][i].position.unitIndex;
+							physics->computedData[j][i].position.ConvertToUnits(newPositionUnit);
+						}
+
+						if (velocityUnitsChanged) {
+							int newVelocityUnit = physics->computedData[physics->dataIndex][i].velocity.unitIndex;
+							physics->computedData[j][i].velocity.ConvertToUnits(newVelocityUnit);
+						}
+					}
+				}
+			}
+			ImGui::End();
+		}
 	}
-	ImGui::End();
-
 }
 
 void UserInterface::InitObjectDataWindows(std::vector<PhysObject> objects)
