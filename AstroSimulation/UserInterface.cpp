@@ -45,7 +45,7 @@ bool UserInterface::InputScalarScientific(const char* label, ImGuiDataType data_
 
 	bool value_changed = false;
 	extra_flags |= ImGuiInputTextFlags_AutoSelectAll;
-	if (ImGui::InputText("", buf, IM_ARRAYSIZE(buf), extra_flags))
+	if (ImGui::InputText(label, buf, IM_ARRAYSIZE(buf), extra_flags))
 		value_changed = DataTypeApplyOpFromTextScientific(buf, GImGui->InputTextState.InitialText.begin(), data_type, data_ptr, scalar_format);
 
 	ImGui::PopID();
