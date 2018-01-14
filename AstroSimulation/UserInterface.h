@@ -21,13 +21,10 @@ public:
 	std::vector<std::string> GetAllFoldersInFolder(std::string folderPath);
 
 	bool isPaused = true;
-	bool showMainWindow = true;
-	bool showLoadPopup = false;
-	bool showSavePopup = false;
+
 	std::vector<std::string> saveFiles;
 	std::vector<bool> selected;
 	std::vector<std::string> textureFolders;
-	bool showTopLeftOverlay = true;
 	std::map<std::string, bool> ShowDataWindow;
 
 private:
@@ -36,10 +33,17 @@ private:
 	bool InputScientific(const char* label, float* v, const char *display_format = "%.3g", ImGuiInputTextFlags extra_flags = 0);
 
 	ImGuiWindowFlags WindowFlags;
+	ImGuiTreeNodeFlags TreeNodeFlags;
 
 	template <UnitType type> bool UnitCombo(std::string id, ValueWithUnits<type>* value);
 	template <UnitType type> bool UnitCombo3(std::string id, ValueWithUnits3<type>* value);
 	template <typename T> T clip(const T& n, const T& lower, const T& upper);
+
+	bool ShowSimulationWindow = true;
+	bool ShowCameraWindow = false;
+	bool ShowLoadPopup = false;
+	bool ShowSavePopup = false;
+	bool ShowTopLeftOverlay = true;
 
 	void LoadPopup(Physics* physics);
 	void TopLeftOverlay(Physics* physics);
@@ -48,5 +52,11 @@ private:
 	void ObjectsTree(std::list<PhysObject> objects);
 	void ObjectsTreeNode(std::string name, std::list<PhysObject> satelliteObjects);
 	void ObjectDataWindows(Physics * physics);
+	void CameraWindow(Camera* camera);
+	void SimulationWindow(Physics* physics, float* xTranslate, float* yTranslate);
+
+	void UpdateStyle();
+	enum class Style { Classic, Dark, Light };
+	Style style;
 };
 #endif

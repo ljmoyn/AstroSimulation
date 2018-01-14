@@ -16,6 +16,12 @@ void UserInterface::InitUserInterface(GLFWwindow * window)
 
 	WindowFlags = 0;
 	WindowFlags |= ImGuiWindowFlags_AlwaysAutoResize;
+
+	TreeNodeFlags = 0;
+	TreeNodeFlags |= ImGuiTreeNodeFlags_DefaultOpen;
+
+	style = Style::Dark;
+	UpdateStyle();
 }
 
 bool UserInterface::DataTypeApplyOpFromTextScientific(const char* buf, const char* initial_value_buf, ImGuiDataType data_type, void* data_ptr, const char* scalar_format)
@@ -129,7 +135,7 @@ void UserInterface::LoadPopup(Physics* physics) {
 	//would be nicer if I could put OpenPopup inside the menu item, and get rid of showLoadPopup. Unfortunately, OpenPopup only works if it is on the same level as BeginPopupModal. 
 	//I can't put BeginPopupModal inside the menu, because it would then only show up if the menu is open (which is not the case after you click a menu item)
 	//https://github.com/ocornut/imgui/issues/331
-	if (showLoadPopup)
+	if (ShowLoadPopup)
 	{
 		ImGui::OpenPopup("Load Scenario");
 	}
@@ -178,13 +184,13 @@ void UserInterface::LoadPopup(Physics* physics) {
 					Physics::FromXml(physics, "../saves/" + saveFiles[i], textureFolders);
 			}
 
-			showLoadPopup = false;
+			ShowLoadPopup = false;
 		}
 		ImGui::SameLine();
 		if (ImGui::Button("Cancel", ImVec2(120, 0)))
 		{
 			ImGui::CloseCurrentPopup();
-			showLoadPopup = false;
+			ShowLoadPopup = false;
 		}
 		ImGui::PopStyleVar();
 		ImGui::EndPopup();
@@ -193,7 +199,7 @@ void UserInterface::LoadPopup(Physics* physics) {
 
 void UserInterface::TopLeftOverlay(Physics* physics)
 {
-	ImGui::SetNextWindowPos(ImVec2(5, 20));
+	ImGui::SetNextWindowPos(ImVec2(5, 24));
 	ImGui::Begin("TopLeftOverlay", NULL, ImVec2(0, 0), 0.3f, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoSavedSettings);
 	ImGui::Text(("Time: " + std::to_string(physics->time) + " years").c_str());
 	ImGui::Text("FPS: %.3f", ImGui::GetIO().Framerate);
@@ -201,7 +207,7 @@ void UserInterface::TopLeftOverlay(Physics* physics)
 }
 
 void UserInterface::SavePopup(Physics* physics) {
-	if (showSavePopup)
+	if (ShowSavePopup)
 	{
 		ImGui::OpenPopup("Save");
 	}
@@ -218,17 +224,35 @@ void UserInterface::SavePopup(Physics* physics) {
 			saveFiles.push_back(std::string(filename) + ".xml");
 			selected.push_back(false);
 			ImGui::CloseCurrentPopup();
-			showSavePopup = false;
+			ShowSavePopup = false;
 		}
 		ImGui::SameLine();
 		if (ImGui::Button("Cancel", ImVec2(120, 0)))
 		{
 			ImGui::CloseCurrentPopup();
-			showSavePopup = false;
+			ShowSavePopup = false;
 		}
 
 		ImGui::EndPopup();
 	}
+}
+
+void UserInterface::UpdateStyle()
+{
+	switch (style) {
+	case Style::Classic:
+		ImGui::StyleColorsClassic();
+		break;
+	case Style::Light:
+		ImGui::StyleColorsLight();
+		break;
+	case Style::Dark:
+		ImGui::StyleColorsDark();
+		break;
+	}
+
+	ImGuiStyle* customStyle = &ImGui::GetStyle();
+	customStyle->WindowBorderSize = 1.0f;
 }
 
 void UserInterface::MenuBar(Physics* physics) {
@@ -236,16 +260,35 @@ void UserInterface::MenuBar(Physics* physics) {
 	{
 		if (ImGui::BeginMenu("File"))
 		{
-			if (ImGui::MenuItem("Save As..."))
-				showSavePopup = true;
-			if (ImGui::MenuItem("Load"))
-				showLoadPopup = true;
+			ShowSavePopup = ImGui::MenuItem("Save As...");
+			ShowLoadPopup = ImGui::MenuItem("Load");
 
 			ImGui::EndMenu();
 		}
 		if (ImGui::BeginMenu("View"))
 		{
-			ImGui::MenuItem("Top Left Overlay", NULL, &showTopLeftOverlay);
+			if (ImGui::BeginMenu("Style"))
+			{
+				if(ImGui::MenuItem("Classic", NULL, style == Style::Classic)) {
+					style = Style::Classic;
+					UpdateStyle();
+				}
+				if (ImGui::MenuItem("Dark", NULL, style == Style::Dark)) {
+					style = Style::Dark;
+					UpdateStyle();
+				}
+				if (ImGui::MenuItem("Light", NULL, style == Style::Light)) {
+					style = Style::Light;
+					UpdateStyle();
+				}
+
+				ImGui::EndMenu();
+			}
+
+			ImGui::MenuItem("Simulation Controls", NULL, &ShowSimulationWindow);
+			ImGui::MenuItem("Camera", NULL, &ShowCameraWindow);
+			ImGui::MenuItem("Top Left Overlay", NULL, &ShowTopLeftOverlay);
+
 			ImGui::EndMenu();
 		}
 		ImGui::EndMainMenuBar();
@@ -257,166 +300,141 @@ void UserInterface::MenuBar(Physics* physics) {
 
 void UserInterface::ShowMainUi(Physics* physics, Camera* camera, float* xTranslate, float* yTranslate, float* zTranslate)
 {
-	ImGuiStyle& style = ImGui::GetStyle();
-	style.Colors[ImGuiCol_PopupBg] = ImVec4(0.05f, 0.05f, 0.10f, 1.00f);
-	style.Colors[ImGuiCol_Border] = ImVec4{ 255,255,255,255 };
-
 	MenuBar(physics);
 
-	if (showTopLeftOverlay)
+	if(ShowTopLeftOverlay)
 		TopLeftOverlay(physics);
 
 	ObjectDataWindows(physics);
 
-	ImGui::SetNextWindowSize(ImVec2(500, 680), ImGuiSetCond_FirstUseEver);
-	if (!ImGui::Begin("Simulation Controls", &showMainWindow, WindowFlags))
+	if(ShowCameraWindow)
+		CameraWindow(camera);
+
+	if(ShowSimulationWindow)
+		SimulationWindow(physics, xTranslate, yTranslate);
+}
+
+void UserInterface::SimulationWindow(Physics * physics, float* xTranslate, float* yTranslate)
+{
+	if (ImGui::Begin("Simulation Controls", &ShowSimulationWindow, WindowFlags))
 	{
-		// Early out if the window is collapsed, as an optimization.
-		ImGui::End();
-		return;
-	}
-
-	ImGuiTreeNodeFlags treeFlags = 0;
-	treeFlags |= ImGuiTreeNodeFlags_DefaultOpen;
-
-	if (ImGui::CollapsingHeader("Setup", treeFlags))
-	{
-
-		//hack since imgui can't place legit labels on the left currently. It's a planned feature, so I'll fix this when that happens
-		ImGui::AlignFirstTextHeightToWidgets();
-		ImGui::Text("Algorithm "); ImGui::SameLine();
-		ImGui::PushItemWidth(288);
-		ImGui::Combo("##Algorithm", &physics->selectedAlgorithm, physics->algorithms, IM_ARRAYSIZE(physics->algorithms));
-		ImGui::PopItemWidth();
-
-		ImGui::AlignFirstTextHeightToWidgets();
-		ImGui::Text("Timestep  "); ImGui::SameLine();
-		ImGui::PushItemWidth(200);
-		ImGui::InputFloat("##Timestep", &physics->timestep.value, 0.001f); ImGui::SameLine();
-		ImGui::PushItemWidth(80);
-		UnitCombo<UnitType::Time>("##TimestepUnits", &physics->timestep);
-		ImGui::PopItemWidth();
-
-		ImGui::AlignFirstTextHeightToWidgets();
-		ImGui::Text("Total Time"); ImGui::SameLine();
-		ImGui::PushItemWidth(200);
-		ImGui::InputFloat("##Total Time", &physics->totalTime.value, 0.01f); ImGui::SameLine();
-		ImGui::PushItemWidth(80);
-		UnitCombo<UnitType::Time>("##TotalTimeUnits", &physics->totalTime);
-		ImGui::PopItemWidth();
-
-		int totalTimesteps = round(physics->totalTime.GetBaseValue() / physics->timestep.GetBaseValue());
-		ImGui::PushItemWidth(300);
-
-		std::vector<PhysObject> objects = physics->getCurrentObjects();
-		std::list<PhysObject> objectsList(objects.begin(), objects.end());
-		ObjectsTree(objectsList);
-
-		if (ImGui::Button("Compute", ImVec2(ImGui::GetWindowContentRegionWidth(), 30)))
+		if (ImGui::CollapsingHeader("Setup", TreeNodeFlags))
 		{
-			isPaused = true;
+			//hack since imgui can't place legit labels on the left currently. It's a planned feature, so I'll fix this when that happens
+			ImGui::AlignFirstTextHeightToWidgets();
+			ImGui::Text("Algorithm "); ImGui::SameLine();
+			ImGui::PushItemWidth(288);
+			ImGui::Combo("##Algorithm", &physics->selectedAlgorithm, physics->algorithms, IM_ARRAYSIZE(physics->algorithms));
+			ImGui::PopItemWidth();
 
-			physics->temporaryData = physics->computedData;
+			ImGui::AlignFirstTextHeightToWidgets();
+			ImGui::Text("Timestep  "); ImGui::SameLine();
+			ImGui::PushItemWidth(200);
+			ImGui::InputFloat("##Timestep", &physics->timestep.value, 0.001f); ImGui::SameLine();
+			ImGui::PushItemWidth(80);
+			UnitCombo<UnitType::Time>("##TimestepUnits", &physics->timestep);
+			ImGui::PopItemWidth();
 
-			physics->temporaryIndex = physics->dataIndex;
+			ImGui::AlignFirstTextHeightToWidgets();
+			ImGui::Text("Total Time"); ImGui::SameLine();
+			ImGui::PushItemWidth(200);
+			ImGui::InputFloat("##Total Time", &physics->totalTime.value, 0.01f); ImGui::SameLine();
+			ImGui::PushItemWidth(80);
+			UnitCombo<UnitType::Time>("##TotalTimeUnits", &physics->totalTime);
+			ImGui::PopItemWidth();
 
-			physics->computedData = { objects };
-			physics->dataIndex = 0;
-			physics->updatePaths(true);
+			int totalTimesteps = round(physics->totalTime.GetBaseValue() / physics->timestep.GetBaseValue());
+			ImGui::PushItemWidth(300);
 
-			ImGui::SetNextWindowSize(ImVec2(300, 100), ImGuiSetCond_FirstUseEver);
-			ImGui::OpenPopup("Computing timesteps...");
-		}
-		if (ImGui::BeginPopupModal("Computing timesteps..."))
-		{
-			char progressString[32];
+			std::vector<PhysObject> objects = physics->getCurrentObjects();
+			std::list<PhysObject> objectsList(objects.begin(), objects.end());
+			ObjectsTree(objectsList);
 
-			if (physics->dataIndex + 1 > totalTimesteps)
-				ImGui::CloseCurrentPopup();
-			else {
-				physics->step(physics->timestep.GetBaseValue());
-				physics->updatePaths(false);
+			if (ImGui::Button("Compute", ImVec2(ImGui::GetWindowContentRegionWidth(), 30)))
+			{
+				isPaused = true;
+
+				physics->temporaryData = physics->computedData;
+
+				physics->temporaryIndex = physics->dataIndex;
+
+				physics->computedData = { objects };
+				physics->dataIndex = 0;
+				physics->updatePaths(true);
+
+				ImGui::SetNextWindowSize(ImVec2(300, 100), ImGuiSetCond_FirstUseEver);
+				ImGui::OpenPopup("Computing timesteps...");
 			}
-			sprintf_s(progressString, "%d/%d", physics->dataIndex + 1, totalTimesteps);
+			if (ImGui::BeginPopupModal("Computing timesteps..."))
+			{
+				char progressString[32];
 
-			ImGui::ProgressBar((float)physics->dataIndex / totalTimesteps, ImVec2(0.f, 0.f), progressString);
+				if (physics->dataIndex + 1 > totalTimesteps)
+					ImGui::CloseCurrentPopup();
+				else {
+					physics->step(physics->timestep.GetBaseValue());
+					physics->updatePaths(false);
+				}
+				sprintf_s(progressString, "%d/%d", physics->dataIndex + 1, totalTimesteps);
+
+				ImGui::ProgressBar((float)physics->dataIndex / totalTimesteps, ImVec2(0.f, 0.f), progressString);
 
 
-			if (ImGui::Button("Cancel")) {
-				physics->computedData = physics->temporaryData;
-				physics->dataIndex = physics->temporaryIndex;
-				physics->temporaryData = {};
+				if (ImGui::Button("Cancel")) {
+					physics->computedData = physics->temporaryData;
+					physics->dataIndex = physics->temporaryIndex;
+					physics->temporaryData = {};
 
-				ImGui::CloseCurrentPopup();
+					ImGui::CloseCurrentPopup();
+				}
+
+				ImGui::EndPopup();
 			}
 
-			ImGui::EndPopup();
 		}
+		if (ImGui::CollapsingHeader("Playback", TreeNodeFlags))
+		{
+			ImGui::AlignFirstTextHeightToWidgets();
+			ImGui::Text("Object Focus  "); ImGui::SameLine();
+			ImGui::PushItemWidth(260);
+			std::vector<std::string> names = physics->GetObjectNames();
 
+			//https://eliasdaler.github.io/using-imgui-with-sfml-pt2#combobox-listbox
+			static auto vector_getter = [](void* vec, int idx, const char** out_text)
+			{
+				auto& vector = *static_cast<std::vector<std::string>*>(vec);
+				if (idx < 0 || idx >= static_cast<int>(vector.size())) { return false; }
+				*out_text = vector.at(idx).c_str();
+				return true;
+			};
+
+			if (ImGui::Combo("##ObjectFocus", &physics->objectFocus, vector_getter, static_cast<void*>(&names), names.size()))
+			{
+				int originalIndex = physics->dataIndex;
+
+				for (physics->dataIndex = 0; physics->dataIndex < physics->computedData.size(); physics->dataIndex++)
+					physics->updatePaths(physics->dataIndex == 0);
+
+				physics->dataIndex = originalIndex;
+
+				//changing focus, and want to re-center on the new target
+				*xTranslate = 0.0;
+				*yTranslate = 0.0;
+			}
+
+			ImGui::AlignFirstTextHeightToWidgets();
+			ImGui::Text("Playback Speed"); ImGui::SameLine();
+			ImGui::InputInt("##Playback Speed", &physics->playbackSpeed);
+
+			if (ImGui::Button(isPaused ? "Play" : "Pause", ImVec2(97, 0)))
+			{
+				isPaused = !isPaused;
+			}
+			ImGui::SameLine();
+			if (ImGui::SliderInt("##playbackSlider", &physics->dataIndex, 0, physics->computedData.size() - 1))
+				physics->dataIndex = clip(physics->dataIndex, 0, (int)physics->computedData.size() - 1);
+		}
 	}
-	if (ImGui::CollapsingHeader("Playback", treeFlags))
-	{
-		ImGui::AlignFirstTextHeightToWidgets();
-		ImGui::Text("Object Focus  "); ImGui::SameLine();
-		ImGui::PushItemWidth(-1);
-		std::vector<std::string> names = physics->GetObjectNames();
-
-		//https://eliasdaler.github.io/using-imgui-with-sfml-pt2#combobox-listbox
-		static auto vector_getter = [](void* vec, int idx, const char** out_text)
-		{
-			auto& vector = *static_cast<std::vector<std::string>*>(vec);
-			if (idx < 0 || idx >= static_cast<int>(vector.size())) { return false; }
-			*out_text = vector.at(idx).c_str();
-			return true;
-		};
-
-		if (ImGui::Combo("##ObjectFocus", &physics->objectFocus, vector_getter, static_cast<void*>(&names), names.size()))
-		{
-			int originalIndex = physics->dataIndex;
-
-			for (physics->dataIndex = 0; physics->dataIndex < physics->computedData.size(); physics->dataIndex++)
-				physics->updatePaths(physics->dataIndex == 0);
-
-			physics->dataIndex = originalIndex;
-
-			//changing focus, and want to re-center on the new target
-			*xTranslate = 0.0;
-			*yTranslate = 0.0;
-		}
-
-		ImGui::AlignFirstTextHeightToWidgets();
-		ImGui::Text("Azimuth       "); ImGui::SameLine();
-		ImGui::PushItemWidth(-1);
-		if (ImGui::SliderFloat("##azimuth", &camera->azimuth, -360, 360.0))
-			camera->azimuth = clip(camera->azimuth, -360.0f, 360.0f);
-
-		ImGui::AlignFirstTextHeightToWidgets();
-		ImGui::Text("Inclination   "); ImGui::SameLine();
-		ImGui::PushItemWidth(-1);
-		if (ImGui::SliderFloat("##inclination", &camera->inclination, 0, 90.0))
-			camera->inclination = clip(camera->inclination, 0.0f, 90.0f);
-
-		ImGui::AlignFirstTextHeightToWidgets();
-		ImGui::Text("Camera Zoom   "); ImGui::SameLine();
-		ImGui::PushItemWidth(-1);
-		if (ImGui::SliderFloat("##zoom", &camera->Zoom, 0, 45.0))
-			camera->Zoom = clip(camera->Zoom, 0.0f, 45.0f);
-
-		ImGui::AlignFirstTextHeightToWidgets();
-		ImGui::Text("Playback Speed"); ImGui::SameLine();
-		ImGui::PushItemWidth(-1);
-		ImGui::InputInt("##Playback Speed", &physics->playbackSpeed);
-
-		if (ImGui::Button(isPaused ? "Play" : "Pause", ImVec2(97, 0)))
-		{
-			isPaused = !isPaused;
-		}
-		ImGui::SameLine();
-		ImGui::PushItemWidth(-1);
-		if (ImGui::SliderInt("##playbackSlider", &physics->dataIndex, 0, physics->computedData.size() - 1))
-			physics->dataIndex = clip(physics->dataIndex, 0, (int)physics->computedData.size() - 1);
-	}
-
 	ImGui::End();
 }
 
@@ -507,7 +525,6 @@ void UserInterface::ObjectDataWindows(Physics * physics)
 		std::string windowId = objects[i].name + "##DataWindow";
 		if (ShowDataWindow[windowId])
 		{
-			ImGui::SetNextWindowSize(ImVec2(500, 440), ImGuiSetCond_FirstUseEver);
 			if (ImGui::Begin(windowId.c_str(), &(ShowDataWindow[windowId]), WindowFlags))
 			{
 				ImGui::AlignFirstTextHeightToWidgets();
@@ -590,4 +607,28 @@ void UserInterface::ObjectsTreeNode(std::string name, std::list<PhysObject> sate
 
 		ImGui::TreePop();
 	}
+}
+
+void UserInterface::CameraWindow(Camera * camera)
+{
+	if (ImGui::Begin("Camera", &ShowCameraWindow, WindowFlags))
+	{
+		ImGui::AlignFirstTextHeightToWidgets();
+		ImGui::Text("Azimuth    "); ImGui::SameLine();
+		ImGui::PushItemWidth(250);
+		if (ImGui::SliderFloat("##azimuth", &camera->azimuth, -360, 360.0))
+			camera->azimuth = clip(camera->azimuth, -360.0f, 360.0f);
+
+		ImGui::AlignFirstTextHeightToWidgets();
+		ImGui::Text("Inclination"); ImGui::SameLine();
+		if (ImGui::SliderFloat("##inclination", &camera->inclination, 0, 90.0))
+			camera->inclination = clip(camera->inclination, 0.0f, 90.0f);
+
+		ImGui::AlignFirstTextHeightToWidgets();
+		ImGui::Text("Camera Zoom"); ImGui::SameLine();
+		if (ImGui::SliderFloat("##zoom", &camera->Zoom, 0, 45.0))
+			camera->Zoom = clip(camera->Zoom, 0.0f, 45.0f);
+
+	}		
+	ImGui::End();
 }
