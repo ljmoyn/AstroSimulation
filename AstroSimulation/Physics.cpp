@@ -90,7 +90,7 @@ void Physics::FromXml(Physics *physics, std::string filename, std::vector<std::s
 
 	physics->computedData = {objects};
 	physics->dataIndex = 0;
-	physics->objectFocus = 0;
+	physics->origin = 0;
 }
 
 void Physics::ToXml(Physics physics, std::string filename) {
@@ -294,12 +294,19 @@ std::vector<std::string> Physics::GetObjectNames() {
 
 std::vector<float> Physics::GetFocusOffsets(std::vector <PhysObject> objects) {
 	float xOffset = 0, yOffset = 0, zOffset = 0;
-	if (objectFocus > 0) {
+	if (origin > 0) {
 		//-1 since the first is "no focus"
-		xOffset = objects[objectFocus-1].position.GetBaseValue(0);
-		yOffset = objects[objectFocus-1].position.GetBaseValue(1);
-		zOffset = objects[objectFocus-1].position.GetBaseValue(2);
+		xOffset = objects[origin-1].position.GetBaseValue(0);
+		yOffset = objects[origin-1].position.GetBaseValue(1);
+		zOffset = objects[origin-1].position.GetBaseValue(2);
 	}
 
 	return{ xOffset, yOffset, zOffset };
+}
+
+PhysObject Physics::GetObjectByName(std::string name)
+{
+	std::vector<PhysObject> objects = getCurrentObjects();
+	auto it = std::find_if(objects.begin(), objects.end(), [&name](const PhysObject& obj) {return obj.name == name; });
+	return *it;
 }

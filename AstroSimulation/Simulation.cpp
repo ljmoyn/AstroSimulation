@@ -38,7 +38,7 @@ void Simulation::update()
 
 	ImGui_ImplGlfwGL3_NewFrame();
 
-	userInterface.ShowMainUi(&physics, &graphics.camera, &graphics.xTranslate, &graphics.yTranslate, &graphics.zTranslate);
+	userInterface.ShowMainUi(&physics, &graphics);
 
 	if (!userInterface.isPaused && physics.dataIndex + physics.playbackSpeed > (int)physics.computedData.size() - 1) {
 		physics.dataIndex = 0;
@@ -63,6 +63,12 @@ void Simulation::update()
 		(float)graphics.width / graphics.height, // aspect ratio
 		0.1f // near clipping plane, should be > 0
 	);
+
+	if (graphics.followObject != "") {
+		PhysObject object = physics.GetObjectByName(graphics.followObject);
+		graphics.xTranslate = -object.position.GetBaseValue(0);
+	    graphics.yTranslate = -object.position.GetBaseValue(1);
+	}
 
 	graphics.setView();
 

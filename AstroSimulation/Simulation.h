@@ -11,7 +11,6 @@ public:
 	Simulation(std::string physicsSource);
 	~Simulation();
 
-	//void ShowMainUi();
 	void update();
 	static void MouseButtonWrapper(GLFWwindow* window, int button, int action, int mods);
 	void MouseButtonCallback(GLFWwindow* window, int button, int action, int mods);

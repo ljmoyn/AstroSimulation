@@ -35,7 +35,8 @@ public:
 
 	std::vector<std::string> GetObjectNames();
 	std::vector<float> GetFocusOffsets(std::vector <PhysObject> objects);
-	//keep objects and objectSettings as separate objects, because I want 
+	PhysObject GetObjectByName(std::string name);
+	//keep objects and objectSettings as separate vectors, because I want 
 	//PhysObject to contain only the fundamental object data, rather than
 	//get cluttered up with ui info.
 	std::vector<ObjectSettings> objectSettings;
@@ -55,7 +56,8 @@ public:
 	int dataIndex;
 	float time;
 
-	int objectFocus;
+	//index of the object to be used as the origin of the coordinate system. index 0 = CoM of the system
+	int origin;
 
 	int selectedAlgorithm;
 	const char* algorithms[3] = { "Velocity Verlet", "Runge Kutta 4", "RK45 with Adaptive Stepsize" };

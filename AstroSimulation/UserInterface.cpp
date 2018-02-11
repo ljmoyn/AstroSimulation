@@ -298,7 +298,7 @@ void UserInterface::MenuBar(Physics* physics) {
 	SavePopup(physics);
 }
 
-void UserInterface::ShowMainUi(Physics* physics, Camera* camera, float* xTranslate, float* yTranslate, float* zTranslate)
+void UserInterface::ShowMainUi(Physics* physics, Graphics * graphics)
 {
 	MenuBar(physics);
 
@@ -308,13 +308,41 @@ void UserInterface::ShowMainUi(Physics* physics, Camera* camera, float* xTransla
 	ObjectDataWindows(physics);
 
 	if(ShowCameraWindow)
-		CameraWindow(camera);
+		CameraWindow(&graphics->camera);
 
 	if(ShowSimulationWindow)
-		SimulationWindow(physics, xTranslate, yTranslate);
+		SimulationWindow(physics, graphics);
 }
 
-void UserInterface::SimulationWindow(Physics * physics, float* xTranslate, float* yTranslate)
+void UserInterface::OriginDropdown(Physics * physics, Graphics * graphics)
+{
+	std::vector<std::string> names = physics->GetObjectNames();
+
+	//https://eliasdaler.github.io/using-imgui-with-sfml-pt2#combobox-listbox
+	static auto vector_getter = [](void* vec, int idx, const char** out_text)
+	{
+		auto& vector = *static_cast<std::vector<std::string>*>(vec);
+		if (idx < 0 || idx >= static_cast<int>(vector.size())) { return false; }
+		*out_text = vector.at(idx).c_str();
+		return true;
+	};
+
+	if (ImGui::Combo("##ObjectFocus", &physics->origin, vector_getter, static_cast<void*>(&names), names.size()))
+	{
+		int originalIndex = physics->dataIndex;
+
+		for (physics->dataIndex = 0; physics->dataIndex < physics->computedData.size(); physics->dataIndex++)
+			physics->updatePaths(physics->dataIndex == 0);
+
+		physics->dataIndex = originalIndex;
+
+		//changing focus, and want to re-center on the new target
+		graphics->xTranslate = 0.0;
+		graphics->yTranslate = 0.0;
+	}
+}
+
+void UserInterface::SimulationWindow(Physics * physics, Graphics * graphics)
 {
 	if (ImGui::Begin("Simulation Controls", &ShowSimulationWindow, WindowFlags))
 	{
@@ -343,12 +371,16 @@ void UserInterface::SimulationWindow(Physics * physics, float* xTranslate, float
 			UnitCombo<UnitType::Time>("##TotalTimeUnits", &physics->totalTime);
 			ImGui::PopItemWidth();
 
-			int totalTimesteps = round(physics->totalTime.GetBaseValue() / physics->timestep.GetBaseValue());
-			ImGui::PushItemWidth(300);
+			ImGui::AlignFirstTextHeightToWidgets();
+			ImGui::Text("Origin    "); ImGui::SameLine();
+			ImGui::PushItemWidth(288);
+			OriginDropdown(physics, graphics);
+
+			ImGui::PushItemWidth(250);
 
 			std::vector<PhysObject> objects = physics->getCurrentObjects();
 			std::list<PhysObject> objectsList(objects.begin(), objects.end());
-			ObjectsTree(objectsList);
+			ObjectsTree(objectsList, graphics);
 
 			if (ImGui::Button("Compute", ImVec2(ImGui::GetWindowContentRegionWidth(), 30)))
 			{
@@ -369,6 +401,7 @@ void UserInterface::SimulationWindow(Physics * physics, float* xTranslate, float
 			{
 				char progressString[32];
 
+				int totalTimesteps = round(physics->totalTime.GetBaseValue() / physics->timestep.GetBaseValue());
 				if (physics->dataIndex + 1 > totalTimesteps)
 					ImGui::CloseCurrentPopup();
 				else {
@@ -394,34 +427,6 @@ void UserInterface::SimulationWindow(Physics * physics, float* xTranslate, float
 		}
 		if (ImGui::CollapsingHeader("Playback", TreeNodeFlags))
 		{
-			ImGui::AlignFirstTextHeightToWidgets();
-			ImGui::Text("Object Focus  "); ImGui::SameLine();
-			ImGui::PushItemWidth(260);
-			std::vector<std::string> names = physics->GetObjectNames();
-
-			//https://eliasdaler.github.io/using-imgui-with-sfml-pt2#combobox-listbox
-			static auto vector_getter = [](void* vec, int idx, const char** out_text)
-			{
-				auto& vector = *static_cast<std::vector<std::string>*>(vec);
-				if (idx < 0 || idx >= static_cast<int>(vector.size())) { return false; }
-				*out_text = vector.at(idx).c_str();
-				return true;
-			};
-
-			if (ImGui::Combo("##ObjectFocus", &physics->objectFocus, vector_getter, static_cast<void*>(&names), names.size()))
-			{
-				int originalIndex = physics->dataIndex;
-
-				for (physics->dataIndex = 0; physics->dataIndex < physics->computedData.size(); physics->dataIndex++)
-					physics->updatePaths(physics->dataIndex == 0);
-
-				physics->dataIndex = originalIndex;
-
-				//changing focus, and want to re-center on the new target
-				*xTranslate = 0.0;
-				*yTranslate = 0.0;
-			}
-
 			ImGui::AlignFirstTextHeightToWidgets();
 			ImGui::Text("Playback Speed"); ImGui::SameLine();
 			ImGui::InputInt("##Playback Speed", &physics->playbackSpeed);
@@ -478,12 +483,14 @@ std::vector<std::string> UserInterface::GetAllFoldersInFolder(std::string folder
 	return names;
 }
 
-void UserInterface::ObjectsTree(std::list<PhysObject> objects)
+void UserInterface::ObjectsTree(std::list<PhysObject> objects, Graphics * graphics)
 {
 	std::list<PhysObject>::iterator objectItr = objects.begin();
 	while (objects.size() > 0 && objectItr != objects.end()) 
 	{
 		std::list<PhysObject> satelliteObjects = {};
+
+		//find any satellites of current object, and remove them from the toplevel list of objects so they don't get added twice
 		if (objectItr->satellites.size() > 0) 
 		{
 			std::vector<std::string>::const_iterator satelliteItr = objectItr->satellites.begin();
@@ -510,7 +517,7 @@ void UserInterface::ObjectsTree(std::list<PhysObject> objects)
 			}
 		}
 
-		ObjectsTreeNode(objectItr->name, satelliteObjects);
+		ObjectsTreeNode(objectItr->name, satelliteObjects, graphics);
 		objectItr++;
 	}
 }
@@ -591,18 +598,29 @@ void UserInterface::InitObjectDataWindows(std::vector<PhysObject> objects)
 	}
 }
 
-void UserInterface::ObjectsTreeNode(std::string name, std::list<PhysObject> satelliteObjects)
+void UserInterface::ObjectsTreeNode(std::string name, std::list<PhysObject> satelliteObjects, Graphics * graphics)
 {
 	if (ImGui::TreeNode(name.c_str()))
 	{
-		if (ImGui::Button("Data", ImVec2(100, 0)))
+		if (ImGui::Button("Data", ImVec2(50, 0)))
 		{
 			ShowDataWindow[name + "##DataWindow"] = true;
 		}
 
+		ImGui::SameLine();
+		if (ImGui::Button("Follow", ImVec2(50, 0)))
+		{
+			//do nothing for now, until I do an overhaul of my camera system.
+			//can't get the object to be fully centered at high zoom. Probably a precision issue.
+			//if (graphics->followObject == name)
+			//	graphics->followObject = "";
+			//else
+			//	graphics->followObject = name;
+		}
+
 		if (satelliteObjects.size() > 0)
 		{
-			ObjectsTree(satelliteObjects);
+			ObjectsTree(satelliteObjects, graphics);
 		}
 
 		ImGui::TreePop();

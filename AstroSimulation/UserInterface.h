@@ -3,7 +3,7 @@
 
 #include "ImguiUtil.h"
 #include "Physics.h"
-#include "Camera.h"
+#include "Graphics.h"
 
 #include <list>
 
@@ -16,7 +16,7 @@ public:
 	void InitUserInterface(GLFWwindow * window);
 	void InitObjectDataWindows(std::vector<PhysObject> objects);
 
-	void ShowMainUi(Physics* physics, Camera* camera, float* xTranslate, float* yTranslate, float* zTranslate);
+	void ShowMainUi(Physics* physics, Graphics * graphics);
 	std::vector<std::string> GetAllFilesInFolder(std::string folderPath);
 	std::vector<std::string> GetAllFoldersInFolder(std::string folderPath);
 
@@ -49,11 +49,12 @@ private:
 	void TopLeftOverlay(Physics* physics);
 	void SavePopup(Physics* physics);
 	void MenuBar(Physics* physics);
-	void ObjectsTree(std::list<PhysObject> objects);
-	void ObjectsTreeNode(std::string name, std::list<PhysObject> satelliteObjects);
+	void ObjectsTree(std::list<PhysObject> objects, Graphics * graphics);
+	void ObjectsTreeNode(std::string name, std::list<PhysObject> satelliteObjects, Graphics * graphics);
 	void ObjectDataWindows(Physics * physics);
 	void CameraWindow(Camera* camera);
-	void SimulationWindow(Physics* physics, float* xTranslate, float* yTranslate);
+	void SimulationWindow(Physics* physics, Graphics * graphics);
+	void OriginDropdown(Physics * physics, Graphics * graphics);
 
 	void UpdateStyle();
 	enum class Style { Classic, Dark, Light };

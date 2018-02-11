@@ -51,6 +51,9 @@ public:
 	GLfloat xTranslate;
 	GLfloat yTranslate;
 	GLfloat zTranslate;
+
+	//name of the object to be followed
+	std::string followObject;
 private:
 
 	unsigned char* LoadDDS(std::string imagePath, int * format, int * mipmapCount, int * width, int * height);
