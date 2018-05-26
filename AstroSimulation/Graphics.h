@@ -35,8 +35,10 @@ public:
 	void drawPoints(Physics * physics);
 	void drawSpheres(Physics * physics);
 	void drawLines(Physics * physics);
-
+	void drawDebugLine();
 	void LoadTextures(std::vector<std::string> textureFolders);
+
+	std::vector<float> debugPoints = {};
 
 	GLFWwindow* window;
 	Camera camera;

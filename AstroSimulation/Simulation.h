@@ -20,7 +20,6 @@ public:
 
 	static void ScrollWrapper(GLFWwindow* window, double xpos, double ypos);
 	void ScrollCallback(GLFWwindow* window, double xpos, double ypos);
-
 	static void WindowResizeWrapper(GLFWwindow* window, int x, int y);
 	void WindowResizeCallback(GLFWwindow* window, int x, int y);
 
@@ -29,6 +28,8 @@ public:
 	UserInterface userInterface;
 
 private:
+	float GetScrollAdjustment(float a1, float b1, float deltaZ);
+
 	double cursorPrevX;
 	double cursorPrevY;
 	bool leftMousePressed = false;

@@ -75,6 +75,7 @@ void Simulation::update()
 	graphics.drawSpheres(&physics);
 	graphics.drawPoints(&physics);
 	graphics.drawLines(&physics);
+	graphics.drawDebugLine();
 
 	ImGui::Render();
 
@@ -182,27 +183,217 @@ void Simulation::ScrollCallback(GLFWwindow* window, double xoffset, double yoffs
 	if (isinf(cursorPosition[2]) || isnan(cursorPosition[2])) {
 		cursorPosition[2] = 0.0;
 	}
-	// zooming out 
-	float zoomFactor = 1.1;
 
+	cursorPosition = { 597.84, 438.7, -15.2 };
+
+	// zooming out 
+	float zoomDirection = 1.0f;
+	float deltaZ = .05;
 	// zooming in 
 	if (yoffset > 0.0)
-		zoomFactor = 1 / 1.1;
+		zoomDirection = -1.0f;
+	
+
+	//std::cout << cursorPosition[0] << " " << cursorPosition[1] << " " << cursorPosition[2] << " " << std::endl;
 
 	//the width and height of the perspective view, at the depth of the cursor position 
 	glm::vec2 fovXY = graphics.camera.getFovXY(cursorPosition[2] - graphics.zTranslate, (float)graphics.width / graphics.height);
-	graphics.camera.setZoomFromFov(fovXY.y * zoomFactor, cursorPosition[2] - graphics.zTranslate);
 
-	if (graphics.camera.Zoom > 45.0) {
-		graphics.camera.Zoom = 45.0;
+	float prevZTranslate = graphics.zTranslate;
+
+	float x = cursorPosition[0] - graphics.xTranslate;
+	float y = cursorPosition[1] - graphics.yTranslate;
+	float z = cursorPosition[2] - graphics.zTranslate;
+	deltaZ = .1;// sqrtf(x*x + y*y + z*z);
+	if (zoomDirection < 0) 
+	{
+		graphics.debugPoints.push_back(graphics.xTranslate);
+		graphics.debugPoints.push_back(graphics.yTranslate);
+		graphics.debugPoints.push_back(graphics.zTranslate);
+	}
+    //translate so that position under the cursor does not appear to move.
+	graphics.xTranslate -= zoomDirection * deltaZ * x;
+	if (zoomDirection < 0) 
+	{
+		graphics.debugPoints.push_back(graphics.xTranslate);
+		graphics.debugPoints.push_back(graphics.yTranslate);
+		graphics.debugPoints.push_back(graphics.zTranslate);
 	}
 
-	glm::vec2 newFovXY = graphics.camera.getFovXY(cursorPosition[2] - graphics.zTranslate, (float)graphics.width / graphics.height);
+	graphics.yTranslate -= zoomDirection * deltaZ * y;
+	if (zoomDirection < 0) 
+	{
+		graphics.debugPoints.push_back(graphics.xTranslate);
+		graphics.debugPoints.push_back(graphics.yTranslate);
+		graphics.debugPoints.push_back(graphics.zTranslate);
+	}
+	graphics.zTranslate -= zoomDirection * deltaZ * z;
 
-	//translate so that position under the cursor does not appear to move.
-	graphics.xTranslate += (newFovXY.x - fovXY.x) * (winX / graphics.width - .5);
-	graphics.yTranslate += (newFovXY.y - fovXY.y) * (winY / graphics.height - .5);
+	if (zoomDirection < 0) 
+	{
+		graphics.debugPoints.push_back(graphics.xTranslate);
+		graphics.debugPoints.push_back(graphics.yTranslate);
+		graphics.debugPoints.push_back(graphics.zTranslate);
+	}
+
+
+	std::cout << graphics.xTranslate << " " << graphics.yTranslate << " " << graphics.zTranslate << " " << std::endl;
+
 }
+
+float Simulation::GetScrollAdjustment(float a1, float b1, float deltaZ)
+{
+	float c = deltaZ * tan(glm::radians(graphics.camera.Zoom / 2.0f));
+	float a2 = a1 - c;
+	float b2 = b1 - c;
+
+	float r2 = a2 / (a2 + b2);
+	float d = (a1 - r2) * (a2 + b2);
+
+	return d;
+}
+
+
+//void Simulation::ScrollCallback(GLFWwindow* window, double xoffset, double yoffset)
+//{
+//	ImGuiIO& io = ImGui::GetIO();
+//	if (io.WantCaptureMouse) {
+//		ImGui_ImplGlfwGL3_ScrollCallback(window, xoffset, yoffset);
+//		return;
+//	}
+//
+//	glm::mat4 modelview = graphics.view*graphics.model;
+//	glm::vec4 viewport = { 0.0, 0.0, graphics.width, graphics.height };
+//
+//	float winX = cursorPrevX;
+//	float winY = viewport[3] - cursorPrevY;
+//	float winZ;
+//
+//	glReadPixels(winX, winY, 1, 1, GL_DEPTH_COMPONENT, GL_FLOAT, &winZ);
+//	glm::vec3 screenCoords = { winX, winY, winZ };
+//
+//	glm::vec3 cursorPosition = glm::unProject(screenCoords, modelview, graphics.projection, viewport);
+//
+//	if (isinf(cursorPosition[2]) || isnan(cursorPosition[2])) {
+//		cursorPosition[2] = 0.0;
+//	}
+//
+//	cursorPosition = { 597.84, 438.7, -15.2 };
+//
+//	// zooming out 
+//	float zoomDirection = 1.0f;
+//	float deltaZ = .1;
+//	// zooming in 
+//	if (yoffset > 0.0)
+//		zoomDirection = -1.0f;
+//
+//
+//	//std::cout << graphics.zTranslate << std::endl;
+//
+//	//the width and height of the perspective view, at the depth of the cursor position 
+//	glm::vec2 fovXY = graphics.camera.getFovXY(cursorPosition[2] - graphics.zTranslate, (float)graphics.width / graphics.height);
+//
+//	float prevZTranslate = graphics.zTranslate;
+//	graphics.zTranslate += zoomDirection * deltaZ * graphics.zTranslate;
+//
+//	//zooming in
+//	if (zoomDirection < 0) {
+//		deltaZ = (prevZTranslate - graphics.zTranslate) / graphics.zTranslate;
+//	}
+//
+//	glm::vec2 newFovXY = graphics.camera.getFovXY(cursorPosition[2] - graphics.zTranslate, (float)graphics.width / graphics.height);
+//
+//
+//	float a1x = 1 - winX / graphics.width;
+//	float b1x = winX / graphics.width;
+//	float dx = GetScrollAdjustment(a1x, b1x, deltaZ);
+//
+//
+//	float a1y = 1 - winY / graphics.height;
+//	float b1y = winY / graphics.height;
+//	float dy = GetScrollAdjustment(a1y, b1y, deltaZ);
+//
+//
+//	float c = deltaZ * tan(glm::radians(graphics.camera.Zoom / 2.0f));
+//	float a2 = a1x - c;
+//	float b2 = b1x - c;
+//
+//	float r2 = a2 / (a2 + b2);
+//	float d = (a1x - r2) * (a2 + b2);
+//	std::cout << a1x << " " << r2 + d << std::endl;
+//
+//	//translate so that position under the cursor does not appear to move.
+//	graphics.xTranslate += zoomDirection * newFovXY[0] * dx;
+//	graphics.yTranslate += zoomDirection * newFovXY[1] * dy;
+//}
+
+//void Simulation::ScrollCallback(GLFWwindow* window, double xoffset, double yoffset)
+//{
+//	ImGuiIO& io = ImGui::GetIO();
+//	if (io.WantCaptureMouse) {
+//		ImGui_ImplGlfwGL3_ScrollCallback(window, xoffset, yoffset);
+//		return;
+//	}
+//
+//	glm::mat4 modelview = graphics.view*graphics.model;
+//	glm::vec4 viewport = { 0.0, 0.0, graphics.width, graphics.height };
+//
+//	float winX = cursorPrevX;
+//	float winY = viewport[3] - cursorPrevY;
+//	float winZ;
+//
+//	glReadPixels(winX, winY, 1, 1, GL_DEPTH_COMPONENT, GL_FLOAT, &winZ);
+//	glm::vec3 screenCoords = { winX, winY, winZ };
+//
+//	glm::vec3 cursorPosition = glm::unProject(screenCoords, modelview, graphics.projection, viewport);
+//
+//	if (isinf(cursorPosition[2]) || isnan(cursorPosition[2])) {
+//		cursorPosition[2] = 0.0;
+//	}
+//
+//	cursorPosition = { 597.84, 438.7, -15.2 };
+//
+//	// zooming out 
+//	float zoomDirection = 1.0f;
+//	float deltaZ = .1;
+//	// zooming in 
+//	if (yoffset > 0.0)
+//		zoomDirection = -1.0f;
+//
+//
+//	//std::cout << graphics.zTranslate << std::endl;
+//
+//	//the width and height of the perspective view, at the depth of the cursor position 
+//	glm::vec2 fovXY = graphics.camera.getFovXY(cursorPosition[2] - graphics.zTranslate, (float)graphics.width / graphics.height);
+//
+//	float prevZTranslate = graphics.zTranslate;
+//	graphics.zTranslate += zoomDirection * deltaZ * graphics.zTranslate;
+//
+//	//zooming in
+//	if (zoomDirection < 0) {
+//		deltaZ = (prevZTranslate - graphics.zTranslate) / graphics.zTranslate;
+//	}
+//
+//	glm::vec2 newFovXY = graphics.camera.getFovXY(cursorPosition[2] - graphics.zTranslate, (float)graphics.width / graphics.height);
+//
+//	float tangent = tan(glm::radians(graphics.camera.Zoom / 2.0f));
+//
+//	float upperSegment = 1 - winX / graphics.width;
+//	float lowerSegment = winX / graphics.width;
+//
+//	//float xAdjustment = -2.0f * tangent * deltaZ * upperSegment + tangent * deltaZ - upperSegment;
+//	float xAdjustment = upperSegment * (upperSegment + lowerSegment - 2.0f * tan(glm::radians(graphics.camera.Zoom / 2.0f)) * deltaZ) / (upperSegment + lowerSegment) + tan(glm::radians(graphics.camera.Zoom / 2.0f)) * deltaZ - upperSegment;
+//
+//	upperSegment = 1 - winY / graphics.height;
+//	lowerSegment = winY / graphics.height;
+//
+//	float yAdjustment = upperSegment * (upperSegment + lowerSegment - 2.0f * tan(glm::radians(graphics.camera.Zoom / 2.0f)) * deltaZ) / (upperSegment + lowerSegment) + tan(glm::radians(graphics.camera.Zoom / 2.0f)) * deltaZ - upperSegment;
+//	//float yAdjustment = -2.0f * tangent * deltaZ * upperSegment + tangent * deltaZ - upperSegment;
+//
+//	//translate so that position under the cursor does not appear to move.
+//	graphics.xTranslate += zoomDirection * newFovXY[0] * xAdjustment;
+//	graphics.yTranslate += zoomDirection * newFovXY[1] * yAdjustment;
+//}
 
 void Simulation::WindowResizeWrapper(GLFWwindow * window, int x, int y)
 {

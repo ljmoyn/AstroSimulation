@@ -57,7 +57,7 @@ public:
 		azimuth = 1.0;
 		inclination = 1.0;
 
-		Zoom = 5.0f;
+		Zoom = 90.0f;
 	}
 
 	glm::vec2 getFovXY(float depth, float aspectRatio) {

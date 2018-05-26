@@ -46,7 +46,7 @@ Graphics::Graphics()
 
 	xTranslate = 0.0;
 	yTranslate = 0.0;
-	zTranslate = -1000000.0;
+	zTranslate = -2000.0;
 	setView();
 	model = glm::mat4();
 
@@ -398,6 +398,58 @@ void Graphics::drawSpheres(Physics * physics) {
 
 	glDeleteBuffers(1, &EBO);
 }
+
+void Graphics::drawDebugLine()
+{
+	if (debugPoints.size() == 0)
+		return;
+
+	glUseProgram(pathsShaderProgram);
+	// Get uniform location
+	GLint modelLoc = glGetUniformLocation(pathsShaderProgram, "model");
+	GLint viewLoc = glGetUniformLocation(pathsShaderProgram, "view");
+	GLint projLoc = glGetUniformLocation(pathsShaderProgram, "projection");
+
+	// Pass them to the shaders
+	glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
+	glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
+	glUniformMatrix4fv(projLoc, 1, GL_FALSE, glm::value_ptr(projection));
+
+	std::vector<float> data = { xTranslate, yTranslate, zTranslate, 597.84f, 438.7f, -15.2f };
+	std::vector<float> color = { 1.0f,0.0f,0.0f };
+
+	glGenVertexArrays(1, &VAO);
+	glBindVertexArray(VAO);
+
+	//Vertex attribute
+	glGenBuffers(1, &vertexVBO);
+	glEnableVertexAttribArray(0);
+	glBindBuffer(GL_ARRAY_BUFFER, vertexVBO);
+	glBufferData(GL_ARRAY_BUFFER, debugPoints.size() * sizeof(GLfloat), &debugPoints[0], GL_STREAM_DRAW);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), (GLvoid*)0);
+
+	// Color attribute
+	glGenBuffers(1, &colorVBO);
+	glEnableVertexAttribArray(1);
+	glBindBuffer(GL_ARRAY_BUFFER, colorVBO);
+	glBufferData(GL_ARRAY_BUFFER, color.size() * sizeof(GLfloat), &color[0], GL_STREAM_DRAW);
+
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), (GLvoid*)0);
+	glVertexAttribDivisor(1, 1);
+
+	glPointSize(1.0);
+
+	//+1 so that the line connects with the point
+	//single instance, so I can pass just one copy of the color, and have it apply to evry vertex
+	glDrawArraysInstanced(GL_LINE_STRIP, 0, debugPoints.size() + 1, 1);
+	glBindVertexArray(0);
+
+	glDeleteVertexArrays(1, &VAO);
+	glDeleteBuffers(1, &vertexVBO);
+	glDeleteBuffers(1, &colorVBO);
+
+}
+
 
 void Graphics::drawLines(Physics * physics) {
 	if (physics->computedData.size() < 2)
