@@ -23,6 +23,10 @@ public:
 	static void WindowResizeWrapper(GLFWwindow* window, int x, int y);
 	void WindowResizeCallback(GLFWwindow* window, int x, int y);
 
+	static void KeyWrapper(GLFWwindow* window, int key, int scancode, int action, int mods);
+	void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods);
+
+
 	Physics physics;
 	Graphics graphics;
 	UserInterface userInterface;
@@ -34,5 +38,8 @@ private:
 	double cursorPrevY;
 	bool leftMousePressed = false;
 	bool rightMousePressed = false;
+
+	int debugIndex = 0;
+	bool cycleDebug = false;
 };
 #endif

@@ -21,7 +21,7 @@ Simulation::Simulation(std::string physicsSource)
 	glfwSetScrollCallback(graphics.window, ScrollWrapper);
 	glfwSetWindowSizeCallback(graphics.window, WindowResizeWrapper);
 
-	glfwSetKeyCallback(graphics.window, ImGui_ImplGlfwGL3_KeyCallback);
+	glfwSetKeyCallback(graphics.window, KeyWrapper);
 	glfwSetCharCallback(graphics.window, ImGui_ImplGlfwGL3_CharCallback);
 }
 
@@ -151,6 +151,31 @@ void Simulation::CursorPositionCallback(GLFWwindow* window, double xpos, double 
 	cursorPrevY = ypos;
 }
 
+void Simulation::KeyWrapper(GLFWwindow* window, int key, int scancode, int action, int mods)
+{
+	ImGui_ImplGlfwGL3_KeyCallback(window, key, scancode, action, mods);
+
+	void *data = glfwGetWindowUserPointer(window);
+	Simulation *simulation = static_cast<Simulation *>(data);
+
+	simulation->KeyCallback(window, key, scancode, action, mods);
+}
+
+void Simulation::KeyCallback(GLFWwindow * window, int key, int scancode, int action, int mods)
+{
+	// == d, for debug
+	if (key == 68 && action == GLFW_PRESS) {
+		cycleDebug = true;
+		graphics.xTranslate = graphics.debugPoints[debugIndex];
+		graphics.yTranslate = graphics.debugPoints[debugIndex+1];
+		graphics.zTranslate = -graphics.debugPoints[debugIndex+2];
+
+		std::cout << graphics.xTranslate << " " << graphics.yTranslate << " " << graphics.zTranslate << " " << std::endl;
+
+		debugIndex+=3;
+	}
+}
+
 void Simulation::ScrollWrapper(GLFWwindow * window, double xpos, double ypos)
 {
 	void *data = glfwGetWindowUserPointer(window);
@@ -184,7 +209,7 @@ void Simulation::ScrollCallback(GLFWwindow* window, double xoffset, double yoffs
 		cursorPosition[2] = 0.0;
 	}
 
-	cursorPosition = { 597.84, 438.7, -15.2 };
+
 
 	// zooming out 
 	float zoomDirection = 1.0f;
@@ -192,7 +217,11 @@ void Simulation::ScrollCallback(GLFWwindow* window, double xoffset, double yoffs
 	// zooming in 
 	if (yoffset > 0.0)
 		zoomDirection = -1.0f;
-	
+
+	if(zoomDirection < 0)
+		cursorPosition = { 597.84, 438.7, -15.2 };
+	else
+		cursorPosition = { 0.0, 0.0, 0.0 };	
 
 	//std::cout << cursorPosition[0] << " " << cursorPosition[1] << " " << cursorPosition[2] << " " << std::endl;
 
@@ -204,36 +233,39 @@ void Simulation::ScrollCallback(GLFWwindow* window, double xoffset, double yoffs
 	float x = cursorPosition[0] - graphics.xTranslate;
 	float y = cursorPosition[1] - graphics.yTranslate;
 	float z = cursorPosition[2] - graphics.zTranslate;
+
 	deltaZ = .1;// sqrtf(x*x + y*y + z*z);
 	if (zoomDirection < 0) 
 	{
 		graphics.debugPoints.push_back(graphics.xTranslate);
 		graphics.debugPoints.push_back(graphics.yTranslate);
-		graphics.debugPoints.push_back(graphics.zTranslate);
-	}
+		graphics.debugPoints.push_back(-graphics.zTranslate);
+	
     //translate so that position under the cursor does not appear to move.
 	graphics.xTranslate -= zoomDirection * deltaZ * x;
-	if (zoomDirection < 0) 
-	{
+
 		graphics.debugPoints.push_back(graphics.xTranslate);
 		graphics.debugPoints.push_back(graphics.yTranslate);
-		graphics.debugPoints.push_back(graphics.zTranslate);
-	}
+		graphics.debugPoints.push_back(-graphics.zTranslate);
+	
 
 	graphics.yTranslate -= zoomDirection * deltaZ * y;
-	if (zoomDirection < 0) 
-	{
+
 		graphics.debugPoints.push_back(graphics.xTranslate);
 		graphics.debugPoints.push_back(graphics.yTranslate);
-		graphics.debugPoints.push_back(graphics.zTranslate);
-	}
+		graphics.debugPoints.push_back(-graphics.zTranslate);
+	
 	graphics.zTranslate -= zoomDirection * deltaZ * z;
 
-	if (zoomDirection < 0) 
-	{
 		graphics.debugPoints.push_back(graphics.xTranslate);
 		graphics.debugPoints.push_back(graphics.yTranslate);
-		graphics.debugPoints.push_back(graphics.zTranslate);
+		graphics.debugPoints.push_back(-graphics.zTranslate);
+	}
+	else {
+		graphics.xTranslate = 0.0;
+		graphics.yTranslate = 0.0;
+		graphics.zTranslate = -2000.0;
+		debugIndex = 0;
 	}
 
 
