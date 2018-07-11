@@ -6,10 +6,21 @@ Features
 -------
 
 * Full UI to setup and playback a simulation.
+<img src="resources/images/Overview.PNG" />
+<img src="resources/images/calculating.PNG" />
+
 * 3D textured objects. To-scale (if you zoom in enough). They even rotate at an accurate rate and have the appropriate axial tilt.
+<img src="resources/images/Earth.PNG" />
+  
 * Orbits!
+<img src="resources/images/Jupiter.PNG" />
+
 * See it all in any unit you could want.
+<img src="resources/images/units.PNG" />
+
 * Want to see what happens when Jupiter has the mass of the sun? Just save your changes and load the scenario at any time. You can even create brand new scenarios if you don't mind editing some XML.
+<img src="resources/images/load.PNG" />
+<img src="resources/images/save.PNG" />
 
 TODO
 -------
@@ -17,7 +28,8 @@ TODO
 * A lighting system (shadows!)
 * Better camera controls and object selection 
 * Create and remove objects through the UI. No more editing XML manually
-* More algorithms. Currently it's just velocity verlet. I wrote Runge-Kutta back when this was in Python, and just need to port it to the c++
+* More color design for the ui
+* More algorithms. Currently it's just velocity verlet. I wrote Runge-Kutta back when this was in Python, and just need to port it to c++
 * Some sort of algorithm comparison tool. See exactly what the difference is between velocity verlet and RK45 with adaptive stepsize.
 * debug tools
 * More settings and data in the ui. Point size, color, toggle graphical features
