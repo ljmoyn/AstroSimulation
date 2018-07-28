@@ -44,10 +44,7 @@ Graphics::Graphics()
 
 	camera = Camera();
 
-	xTranslate = 0.0;
-	yTranslate = 0.0;
-	zTranslate = -1000000.0;
-	setView();
+	view = camera.GetViewMatrix();
 	model = glm::mat4();
 
 }
@@ -451,22 +448,6 @@ void Graphics::drawLines(Physics * physics) {
 		glDeleteBuffers(1, &colorVBO);
 
 	}
-}
-
-void Graphics::setView() {
-	view = glm::mat4();
-
-	view = glm::translate(view, { xTranslate,yTranslate,zTranslate });
-
-	//view = glm::translate(view, { -xTranslate,-yTranslate,0.0 });
-	view = glm::rotate(view, glm::radians(camera.inclination), glm::vec3(1.f, 0.f, 0.f));
-	view = glm::rotate(view, glm::radians(camera.azimuth), glm::vec3(0.f, 0.f, 1.f));
-	//view = glm::translate(view, { xTranslate,yTranslate,0.0 });
-
-	camera.Right = glm::column(view, 0).xyz();
-	camera.Up = glm::column(view, 1).xyz();
-	camera.Front = -glm::column(view, 2).xyz(); // minus because OpenGL camera looks towards negative Z.
-	camera.Position = glm::column(view, 3).xyz();
 }
 
 void Graphics::GetWindowCoordinates(glm::vec4 point, float * xWindow, float *yWindow)

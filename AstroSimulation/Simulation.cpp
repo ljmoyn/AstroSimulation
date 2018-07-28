@@ -64,13 +64,14 @@ void Simulation::update()
 		0.1f // near clipping plane, should be > 0
 	);
 
-	if (graphics.followObject != "") {
+	if (graphics.followObject != "")
+	{
 		PhysObject object = physics.GetObjectByName(graphics.followObject);
-		graphics.xTranslate = -object.position.GetBaseValue(0);
-	    graphics.yTranslate = -object.position.GetBaseValue(1);
+		graphics.camera.Position[0] = -object.position.GetBaseValue(0);
+	    graphics.camera.Position[1] = -object.position.GetBaseValue(1);
 	}
 
-	graphics.setView();
+	graphics.view = graphics.camera.GetViewMatrix();
 
 	graphics.drawSpheres(&physics);
 	graphics.drawPoints(&physics);
@@ -127,18 +128,20 @@ void Simulation::CursorPositionWrapper(GLFWwindow * window, double xpos, double 
 
 void Simulation::CursorPositionCallback(GLFWwindow* window, double xpos, double ypos)
 {
-	if (leftMousePressed) {
+	if (leftMousePressed)
+	{
 		GLfloat xoffset = xpos - cursorPrevX;
 		GLfloat yoffset = cursorPrevY - ypos;
 
-		float fovY = tan(glm::radians(graphics.camera.Zoom / 2)) * 2 * -graphics.zTranslate;
+		float fovY = tan(glm::radians(graphics.camera.Zoom / 2)) * 2 * -graphics.camera.Position[2];
 		float fovX = fovY * ((float)graphics.width / (float)graphics.height);
 
-		graphics.xTranslate += xoffset * fovX / graphics.width;
-		graphics.yTranslate += yoffset * fovY / graphics.height;
+		graphics.camera.Position[0] += xoffset * fovX / graphics.width;
+		graphics.camera.Position[1] += yoffset * fovY / graphics.height;
 	}
 
-	if (rightMousePressed) {
+	if (rightMousePressed)
+	{
 		GLfloat xoffset = (xpos - cursorPrevX) / 4.0;
 		GLfloat yoffset = (ypos - cursorPrevY) / 4.0;
 
@@ -177,31 +180,26 @@ void Simulation::ScrollCallback(GLFWwindow* window, double xoffset, double yoffs
 	glReadPixels(winX, winY, 1, 1, GL_DEPTH_COMPONENT, GL_FLOAT, &winZ);
 	glm::vec3 screenCoords = { winX, winY, winZ };
 
+	//relevant https://stackoverflow.com/questions/48125247/calling-glmunproject-correctly-confused
 	glm::vec3 cursorPosition = glm::unProject(screenCoords, modelview, graphics.projection, viewport);
 
 	if (isinf(cursorPosition[2]) || isnan(cursorPosition[2])) {
 		cursorPosition[2] = 0.0;
 	}
-	// zooming out 
-	float zoomFactor = 1.1;
 
+	float x = cursorPosition[0] - graphics.camera.Position[0];
+	float y = cursorPosition[1] - graphics.camera.Position[1];
+	float z = cursorPosition[2] - graphics.camera.Position[2];
+
+	float zoomDirection = 1.0f;
+	float delta = .1;
 	// zooming in 
 	if (yoffset > 0.0)
-		zoomFactor = 1 / 1.1;
+		zoomDirection = -1.0f;
 
-	//the width and height of the perspective view, at the depth of the cursor position 
-	glm::vec2 fovXY = graphics.camera.getFovXY(cursorPosition[2] - graphics.zTranslate, (float)graphics.width / graphics.height);
-	graphics.camera.setZoomFromFov(fovXY.y * zoomFactor, cursorPosition[2] - graphics.zTranslate);
-
-	if (graphics.camera.Zoom > 45.0) {
-		graphics.camera.Zoom = 45.0;
-	}
-
-	glm::vec2 newFovXY = graphics.camera.getFovXY(cursorPosition[2] - graphics.zTranslate, (float)graphics.width / graphics.height);
-
-	//translate so that position under the cursor does not appear to move.
-	graphics.xTranslate += (newFovXY.x - fovXY.x) * (winX / graphics.width - .5);
-	graphics.yTranslate += (newFovXY.y - fovXY.y) * (winY / graphics.height - .5);
+	graphics.camera.Position[0] -= zoomDirection * delta * x;
+	graphics.camera.Position[1] -= zoomDirection * delta * y;
+	graphics.camera.Position[2] -= zoomDirection * delta * z;
 }
 
 void Simulation::WindowResizeWrapper(GLFWwindow * window, int x, int y)

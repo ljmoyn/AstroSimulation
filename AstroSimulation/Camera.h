@@ -47,7 +47,7 @@ public:
 	// Constructor with vectors
 	Camera()
 	{
-		Position = { 0.0,0.0,0.0 };
+		Position = { 0.0,0.0,2000.0 };
 		Up = { 0.0,1.0,0.0 };
 		WorldUp = { 0.0,1.0,0.0 };
 		Front = { 0.0,0.0,-1.0 };
@@ -57,7 +57,7 @@ public:
 		azimuth = 1.0;
 		inclination = 1.0;
 
-		Zoom = 5.0f;
+		Zoom = 45.0f;
 	}
 
 	glm::vec2 getFovXY(float depth, float aspectRatio) {
@@ -71,5 +71,15 @@ public:
 	//factor of 1/2 inside the atan because we actually need the half-fov. Keep full-fov as input for consistency 
 	void setZoomFromFov(float fovY, float depth) {
 		Zoom = glm::degrees(2 * atan(fovY / (2 * depth)));
+	}
+
+	glm::mat4 GetViewMatrix()
+	{
+		glm::mat4 view = glm::lookAt(Position, Position + Front, Up);
+
+		//TODO these rotations mess up the zoom as you get close.DFind out why
+		view = glm::rotate(view, glm::radians(inclination), glm::vec3(1.f, 0.f, 0.f));
+		view = glm::rotate(view, glm::radians(azimuth), glm::vec3(0.f, 0.f, 1.f));
+		return view;
 	}
 };

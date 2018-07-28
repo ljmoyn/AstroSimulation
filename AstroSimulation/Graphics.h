@@ -31,7 +31,6 @@ public:
 	Graphics();
 	~Graphics() {};
 
-	void setView();
 	void drawPoints(Physics * physics);
 	void drawSpheres(Physics * physics);
 	void drawLines(Physics * physics);
@@ -48,9 +47,6 @@ public:
 	glm::mat4 model;
 	glm::mat4 projection;
 	glm::mat4 view;
-	GLfloat xTranslate;
-	GLfloat yTranslate;
-	GLfloat zTranslate;
 
 	//name of the object to be followed
 	std::string followObject;

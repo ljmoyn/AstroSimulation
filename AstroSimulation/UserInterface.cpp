@@ -337,8 +337,8 @@ void UserInterface::OriginDropdown(Physics * physics, Graphics * graphics)
 		physics->dataIndex = originalIndex;
 
 		//changing focus, and want to re-center on the new target
-		graphics->xTranslate = 0.0;
-		graphics->yTranslate = 0.0;
+		graphics->camera.Position[0] = 0.0;
+		graphics->camera.Position[1] = 0.0;
 	}
 }
 
