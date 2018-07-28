@@ -75,9 +75,13 @@ public:
 
 	glm::mat4 GetViewMatrix()
 	{
+		//TODO rotations after the lookAt mess up the zoom as you get close. Find alternative rotation. Maybe spherical coords?
+		////https://www.opengl.org/discussion_boards/showthread.php/198988-Implementing-an-orbit-camera
+		//float x = glm::length(Position) * sin(glm::radians(inclination)) * cos(glm::radians(azimuth));
+		//float z = glm::length(Position) * cos(glm::radians(inclination));
+		//float y = glm::length(Position) * sin(glm::radians(inclination)) * sin(glm::radians(azimuth));
 		glm::mat4 view = glm::lookAt(Position, Position + Front, Up);
 
-		//TODO these rotations mess up the zoom as you get close.DFind out why
 		view = glm::rotate(view, glm::radians(inclination), glm::vec3(1.f, 0.f, 0.f));
 		view = glm::rotate(view, glm::radians(azimuth), glm::vec3(0.f, 0.f, 1.f));
 		return view;

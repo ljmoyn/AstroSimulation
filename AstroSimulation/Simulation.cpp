@@ -183,8 +183,11 @@ void Simulation::ScrollCallback(GLFWwindow* window, double xoffset, double yoffs
 	//relevant https://stackoverflow.com/questions/48125247/calling-glmunproject-correctly-confused
 	glm::vec3 cursorPosition = glm::unProject(screenCoords, modelview, graphics.projection, viewport);
 
-	if (isinf(cursorPosition[2]) || isnan(cursorPosition[2])) {
-		cursorPosition[2] = 0.0;
+	if (isinf(cursorPosition[0]) || isnan(cursorPosition[0]) ||
+		isinf(cursorPosition[1]) || isnan(cursorPosition[1]) ||
+		isinf(cursorPosition[2]) || isnan(cursorPosition[2]))
+	{
+		cursorPosition = { 0.0, 0.0, 0.0 };
 	}
 
 	float x = cursorPosition[0] - graphics.camera.Position[0];
