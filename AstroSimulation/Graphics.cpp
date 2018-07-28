@@ -508,7 +508,7 @@ void Graphics::drawLines(Physics * physics) {
 void Graphics::setView() {
 	view = glm::mat4();
 
-	view = glm::translate(view, { xTranslate,yTranslate,zTranslate });
+	view = camera.GetViewMatrix();
 
 	//view = glm::translate(view, { -xTranslate,-yTranslate,0.0 });
 	//view = glm::rotate(view, glm::radians(camera.inclination), glm::vec3(1.f, 0.f, 0.f));

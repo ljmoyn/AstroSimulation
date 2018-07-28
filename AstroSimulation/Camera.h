@@ -47,7 +47,7 @@ public:
 	// Constructor with vectors
 	Camera()
 	{
-		Position = { 0.0,0.0,0.0 };
+		Position = { 0.0,0.0,2000.0 };
 		Up = { 0.0,1.0,0.0 };
 		WorldUp = { 0.0,1.0,0.0 };
 		Front = { 0.0,0.0,-1.0 };
@@ -71,5 +71,10 @@ public:
 	//factor of 1/2 inside the atan because we actually need the half-fov. Keep full-fov as input for consistency 
 	void setZoomFromFov(float fovY, float depth) {
 		Zoom = glm::degrees(2 * atan(fovY / (2 * depth)));
+	}
+
+	glm::mat4 GetViewMatrix()
+	{
+		return glm::lookAt(Position, Position + Front, Up);
 	}
 };

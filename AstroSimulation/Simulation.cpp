@@ -135,8 +135,8 @@ void Simulation::CursorPositionCallback(GLFWwindow* window, double xpos, double 
 		float fovY = tan(glm::radians(graphics.camera.Zoom / 2)) * 2 * -graphics.zTranslate;
 		float fovX = fovY * ((float)graphics.width / (float)graphics.height);
 
-		graphics.xTranslate += xoffset * fovX / graphics.width;
-		graphics.yTranslate += yoffset * fovY / graphics.height;
+		graphics.camera.Position[0] += xoffset * fovX / graphics.width;
+		graphics.camera.Position[1] += yoffset * fovY / graphics.height;
 	}
 
 	if (rightMousePressed) {
@@ -166,11 +166,11 @@ void Simulation::KeyCallback(GLFWwindow * window, int key, int scancode, int act
 	// == d, for debug
 	if (key == 68 && action == GLFW_PRESS) {
 		cycleDebug = true;
-		graphics.xTranslate = graphics.debugPoints[debugIndex];
-		graphics.yTranslate = graphics.debugPoints[debugIndex+1];
-		graphics.zTranslate = -graphics.debugPoints[debugIndex+2];
+		graphics.camera.Position[0] = graphics.debugPoints[debugIndex];
+		graphics.camera.Position[1] = graphics.debugPoints[debugIndex+1];
+		graphics.camera.Position[2] = graphics.debugPoints[debugIndex+2];
 
-		std::cout << graphics.xTranslate << " " << graphics.yTranslate << " " << graphics.zTranslate << " " << std::endl;
+		std::cout << graphics.camera.Position[0] << " " << graphics.camera.Position[1] << " " << graphics.camera.Position[2] << " " << std::endl;
 
 		debugIndex+=3;
 	}
@@ -209,8 +209,6 @@ void Simulation::ScrollCallback(GLFWwindow* window, double xoffset, double yoffs
 		cursorPosition[2] = 0.0;
 	}
 
-
-
 	// zooming out 
 	float zoomDirection = 1.0f;
 	float deltaZ = .05;
@@ -223,53 +221,43 @@ void Simulation::ScrollCallback(GLFWwindow* window, double xoffset, double yoffs
 	else
 		cursorPosition = { 0.0, 0.0, 0.0 };	
 
-	//std::cout << cursorPosition[0] << " " << cursorPosition[1] << " " << cursorPosition[2] << " " << std::endl;
-
 	//the width and height of the perspective view, at the depth of the cursor position 
 	glm::vec2 fovXY = graphics.camera.getFovXY(cursorPosition[2] - graphics.zTranslate, (float)graphics.width / graphics.height);
 
-	float prevZTranslate = graphics.zTranslate;
-
-	float x = cursorPosition[0] - graphics.xTranslate;
-	float y = cursorPosition[1] - graphics.yTranslate;
-	float z = cursorPosition[2] - graphics.zTranslate;
+	float x = cursorPosition[0] - graphics.camera.Position[0];
+	float y = cursorPosition[1] - graphics.camera.Position[1];
+	float z = cursorPosition[2] - graphics.camera.Position[2];
 
 	deltaZ = .1;// sqrtf(x*x + y*y + z*z);
 	if (zoomDirection < 0) 
 	{
-		graphics.debugPoints.push_back(graphics.xTranslate);
-		graphics.debugPoints.push_back(graphics.yTranslate);
-		graphics.debugPoints.push_back(-graphics.zTranslate);
+		//translate so that position under the cursor does not appear to move.
+		graphics.camera.Position[0] -= zoomDirection * deltaZ * x;
+
+		graphics.debugPoints.push_back(graphics.camera.Position[0]);
+		graphics.debugPoints.push_back(graphics.camera.Position[1]);
+		graphics.debugPoints.push_back(graphics.camera.Position[2]);
+
+		graphics.camera.Position[1] -= zoomDirection * deltaZ * y;
+
+		graphics.debugPoints.push_back(graphics.camera.Position[0]);
+		graphics.debugPoints.push_back(graphics.camera.Position[1]);
+		graphics.debugPoints.push_back(graphics.camera.Position[2]);
 	
-    //translate so that position under the cursor does not appear to move.
-	graphics.xTranslate -= zoomDirection * deltaZ * x;
+		graphics.camera.Position[2] -= zoomDirection * deltaZ * z;
 
-		graphics.debugPoints.push_back(graphics.xTranslate);
-		graphics.debugPoints.push_back(graphics.yTranslate);
-		graphics.debugPoints.push_back(-graphics.zTranslate);
-	
-
-	graphics.yTranslate -= zoomDirection * deltaZ * y;
-
-		graphics.debugPoints.push_back(graphics.xTranslate);
-		graphics.debugPoints.push_back(graphics.yTranslate);
-		graphics.debugPoints.push_back(-graphics.zTranslate);
-	
-	graphics.zTranslate -= zoomDirection * deltaZ * z;
-
-		graphics.debugPoints.push_back(graphics.xTranslate);
-		graphics.debugPoints.push_back(graphics.yTranslate);
-		graphics.debugPoints.push_back(-graphics.zTranslate);
+		graphics.debugPoints.push_back(graphics.camera.Position[0]);
+		graphics.debugPoints.push_back(graphics.camera.Position[1]);
+		graphics.debugPoints.push_back(graphics.camera.Position[2]);
 	}
 	else {
-		graphics.xTranslate = 0.0;
-		graphics.yTranslate = 0.0;
-		graphics.zTranslate = -2000.0;
+
+		graphics.camera = Camera();
+
 		debugIndex = 0;
 	}
 
-
-	std::cout << graphics.xTranslate << " " << graphics.yTranslate << " " << graphics.zTranslate << " " << std::endl;
+	std::cout << graphics.camera.Position[0] << " " << graphics.camera.Position[1] << " " << graphics.camera.Position[2] << " " << std::endl;
 
 }
 
