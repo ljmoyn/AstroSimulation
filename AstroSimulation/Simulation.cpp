@@ -175,12 +175,22 @@ void Simulation::ScrollCallback(GLFWwindow* window, double xoffset, double yoffs
 
 	float winX = cursorPrevX;
 	float winY = viewport[3] - cursorPrevY;
-	float winZ;
+	float depth;
 
-	glReadPixels(winX, winY, 1, 1, GL_DEPTH_COMPONENT, GL_FLOAT, &winZ);
-	glm::vec3 screenCoords = { winX, winY, winZ };
+	glReadPixels(winX, winY, 1, 1, GL_DEPTH_COMPONENT, GL_FLOAT, &depth);
 
-	//relevant https://stackoverflow.com/questions/48125247/calling-glmunproject-correctly-confused
+	//when winX and winY are in empty space rather than an object, glReadPixels assumes the depth is on the far clipping plane (depth == 1.0)
+	//with depth on the far clipping plane, unProject will return inf values
+	//instead, try to get the depth at the z=0 xy plane 
+	//https://stackoverflow.com/questions/51575456/finding-backup-winz-for-glmunproject?noredirect=1#comment90128848_51578324
+	if (depth == 1.0)
+	{
+		glm::vec3 worldOrigin{ 0.0f, 0.0f, 0.0f };
+		glm::vec3 originNDC = glm::project(worldOrigin, graphics.view, graphics.projection, viewport);
+		depth = originNDC[2];
+	}
+
+	glm::vec3 screenCoords{ winX, winY, depth };
 	glm::vec3 cursorPosition = glm::unProject(screenCoords, modelview, graphics.projection, viewport);
 
 	if (isinf(cursorPosition[0]) || isnan(cursorPosition[0]) ||
