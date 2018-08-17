@@ -173,25 +173,41 @@ void Simulation::ScrollCallback(GLFWwindow* window, double xoffset, double yoffs
 	glm::mat4 modelview = graphics.view*graphics.model;
 	glm::vec4 viewport = { 0.0, 0.0, graphics.width, graphics.height };
 
-	float winX = cursorPrevX;
-	float winY = viewport[3] - cursorPrevY;
-	float depth;
 
-	glReadPixels(winX, winY, 1, 1, GL_DEPTH_COMPONENT, GL_FLOAT, &depth);
+
+	glm::vec2 cursorCoords{ cursorPrevX, viewport[3] - cursorPrevY };
+
+	float depth;
+	glReadPixels(cursorCoords[0], cursorCoords[1], 1, 1, GL_DEPTH_COMPONENT, GL_FLOAT, &depth);
 
 	//when winX and winY are in empty space rather than an object, glReadPixels assumes the depth is on the far clipping plane (depth == 1.0)
 	//with depth on the far clipping plane, unProject will return inf values
-	//instead, try to get the depth at the z=0 xy plane 
+	//instead, try to get the depth at the nearest object
 	//https://stackoverflow.com/questions/51575456/finding-backup-winz-for-glmunproject?noredirect=1#comment90128848_51578324
 	if (depth == 1.0)
 	{
-		glm::vec3 worldOrigin{ 0.0f, 0.0f, 0.0f };
-		glm::vec3 originNDC = glm::project(worldOrigin, graphics.view, graphics.projection, viewport);
-		depth = originNDC[2];
+		std::vector<PhysObject> objects = physics.getCurrentObjects();
+		float minDistance = -1;
+		for (int i = 0; i < objects.size(); i++)
+		{
+			float objectPosition[3];
+			objects[i].position.GetBaseValue(objectPosition);
+			glm::vec3 objectPositionVec = { objectPosition[0], objectPosition[1], objectPosition[2] };
+			glm::vec3 objectCoords = glm::project(objectPositionVec, graphics.view, graphics.projection, viewport);
+			glm::vec2 objectXYCoords = { objectCoords[0], objectCoords[1] };
+
+			float distance = glm::distance(cursorCoords,objectXYCoords);
+
+			if (minDistance < 0 || distance < minDistance) 
+			{
+				minDistance = distance;
+				depth = objectCoords[2];
+			}
+		}
 	}
 
-	glm::vec3 screenCoords{ winX, winY, depth };
-	glm::vec3 cursorPosition = glm::unProject(screenCoords, modelview, graphics.projection, viewport);
+	glm::vec3 finalCursorCoords{ cursorCoords[0], cursorCoords[1], depth };
+	glm::vec3 cursorPosition = glm::unProject(finalCursorCoords, modelview, graphics.projection, viewport);
 
 	if (isinf(cursorPosition[0]) || isnan(cursorPosition[0]) ||
 		isinf(cursorPosition[1]) || isnan(cursorPosition[1]) ||

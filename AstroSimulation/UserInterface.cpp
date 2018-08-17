@@ -645,8 +645,11 @@ void UserInterface::CameraWindow(Camera * camera)
 		ImGui::AlignFirstTextHeightToWidgets();
 		ImGui::Text("Camera Zoom"); ImGui::SameLine();
 		if (ImGui::SliderFloat("##zoom", &camera->Zoom, 0, 45.0))
-			camera->Zoom = clip(camera->Zoom, 0.0f, 45.0f);
+			camera->Zoom = clip(camera->Zoom, 0.0f, 90.0f);
 
+		ImGui::AlignFirstTextHeightToWidgets();
+		ImGui::Text("Position   "); ImGui::SameLine();
+		ImGui::InputFloat3("##CameraPosition", &camera->Position[0]);
 	}		
 	ImGui::End();
 }

@@ -82,8 +82,8 @@ public:
 		//float y = glm::length(Position) * sin(glm::radians(inclination)) * sin(glm::radians(azimuth));
 		glm::mat4 view = glm::lookAt(Position, Position + Front, Up);
 
-		view = glm::rotate(view, glm::radians(inclination), glm::vec3(1.f, 0.f, 0.f));
-		view = glm::rotate(view, glm::radians(azimuth), glm::vec3(0.f, 0.f, 1.f));
+		//view = glm::rotate(view, glm::radians(inclination), glm::vec3(1.f, 0.f, 0.f));
+		//view = glm::rotate(view, glm::radians(azimuth), glm::vec3(0.f, 0.f, 1.f));
 		return view;
 	}
 };
