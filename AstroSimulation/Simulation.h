@@ -33,5 +33,6 @@ private:
 	double cursorPrevY;
 	bool leftMousePressed = false;
 	bool rightMousePressed = false;
+	const float nearClippingPlane = 0.1;
 };
 #endif

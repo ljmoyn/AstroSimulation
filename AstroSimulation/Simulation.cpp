@@ -61,7 +61,7 @@ void Simulation::update()
 	graphics.projection = glm::infinitePerspective(
 		(float)glm::radians(graphics.camera.Zoom), // view angle, usually 90° in radians
 		(float)graphics.width / graphics.height, // aspect ratio
-		0.1f // near clipping plane, should be > 0
+		nearClippingPlane // near clipping plane, should be > 0
 	);
 
 	if (graphics.followObject != "")
@@ -170,6 +170,12 @@ void Simulation::ScrollCallback(GLFWwindow* window, double xoffset, double yoffs
 		return;
 	}
 
+	float zoomDirection = 1.0f;
+	float delta = .1;
+	// zooming in 
+	if (yoffset > 0.0)
+		zoomDirection = -1.0f;
+
 	glm::mat4 modelview = graphics.view*graphics.model;
 	glm::vec4 viewport = { 0.0, 0.0, graphics.width, graphics.height };
 
@@ -184,27 +190,45 @@ void Simulation::ScrollCallback(GLFWwindow* window, double xoffset, double yoffs
 	//with depth on the far clipping plane, unProject will return inf values
 	//instead, try to get the depth at the nearest object
 	//https://stackoverflow.com/questions/51575456/finding-backup-winz-for-glmunproject?noredirect=1#comment90128848_51578324
-	if (depth == 1.0)
+
+	std::vector<PhysObject> objects = physics.getCurrentObjects();
+	float minDistance = -1;
+	for (int i = 0; i < objects.size(); i++)
 	{
-		std::vector<PhysObject> objects = physics.getCurrentObjects();
-		float minDistance = -1;
-		for (int i = 0; i < objects.size(); i++)
+		float objectPosition[3];
+		objects[i].position.GetBaseValue(objectPosition);
+		glm::vec3 objectPositionVec = { objectPosition[0], objectPosition[1], objectPosition[2] };
+		glm::vec3 objectCoords = glm::project(objectPositionVec, graphics.view, graphics.projection, viewport);
+		glm::vec2 objectXYCoords = { objectCoords[0], objectCoords[1] };
+
+		float distance = glm::distance(cursorCoords,objectXYCoords);
+			
+		//if (distance < 2.0 * objects[i].radius.GetBaseValue() && zoomDirection == -1) {
+		//	return;
+		//}
+
+		if (i == 3) {
+			std::cout << "Earth " << objectCoords[0] << " " << objectCoords[1] << " " << objectCoords[2] << std::endl;
+
+		}
+
+		if (i == 5) {
+			std::cout << "Moon " << objectCoords[0] << " " << objectCoords[1] << " " << objectCoords[2] << std::endl;
+
+		}
+
+		if ((minDistance < 0 || distance < minDistance)) 
 		{
-			float objectPosition[3];
-			objects[i].position.GetBaseValue(objectPosition);
-			glm::vec3 objectPositionVec = { objectPosition[0], objectPosition[1], objectPosition[2] };
-			glm::vec3 objectCoords = glm::project(objectPositionVec, graphics.view, graphics.projection, viewport);
-			glm::vec2 objectXYCoords = { objectCoords[0], objectCoords[1] };
-
-			float distance = glm::distance(cursorCoords,objectXYCoords);
-
-			if (minDistance < 0 || distance < minDistance) 
-			{
-				minDistance = distance;
-				depth = objectCoords[2];
-			}
+			minDistance = distance;
+			depth = objectCoords[2];
+			
 		}
 	}
+	
+	std::cout << cursorCoords[0] << " " << cursorCoords[1] << " " << depth << std::endl;
+
+	if ((depth >= 1.0 || depth < nearClippingPlane) && zoomDirection == -1)
+		return;
 
 	glm::vec3 finalCursorCoords{ cursorCoords[0], cursorCoords[1], depth };
 	glm::vec3 cursorPosition = glm::unProject(finalCursorCoords, modelview, graphics.projection, viewport);
@@ -220,15 +244,14 @@ void Simulation::ScrollCallback(GLFWwindow* window, double xoffset, double yoffs
 	float y = cursorPosition[1] - graphics.camera.Position[1];
 	float z = cursorPosition[2] - graphics.camera.Position[2];
 
-	float zoomDirection = 1.0f;
-	float delta = .1;
-	// zooming in 
-	if (yoffset > 0.0)
-		zoomDirection = -1.0f;
+	//std::cout << graphics.camera.Position[0] << " " << graphics.camera.Position[1] << " " << graphics.camera.Position[2] << std::endl;
+
 
 	graphics.camera.Position[0] -= zoomDirection * delta * x;
 	graphics.camera.Position[1] -= zoomDirection * delta * y;
 	graphics.camera.Position[2] -= zoomDirection * delta * z;
+	//std::cout << graphics.camera.Position[0] << " " << graphics.camera.Position[1] << " " << graphics.camera.Position[2] << std::endl;
+
 }
 
 void Simulation::WindowResizeWrapper(GLFWwindow * window, int x, int y)
